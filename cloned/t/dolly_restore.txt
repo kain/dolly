@@ -1,0 +1,108 @@
+Cloning started at: Tue Oct 25 13:43:03 MSK 2011
+
+Disk /dev/sda: 9729 cylinders, 255 heads, 63 sectors/track
+Old situation:
+Units = sectors of 512 bytes, counting from 0
+
+   Device Boot    Start       End   #sectors  Id  System
+/dev/sda1   *        63 107422874  107422812   7  HPFS/NTFS
+/dev/sda2     107422875 149099264   41676390   7  HPFS/NTFS
+/dev/sda3             0         -          0   0  Empty
+/dev/sda4             0         -          0   0  Empty
+New situation:
+Units = sectors of 512 bytes, counting from 0
+
+   Device Boot    Start       End   #sectors  Id  System
+/dev/sda1   *        63 107422874  107422812   7  HPFS/NTFS
+/dev/sda2     107422875 149099264   41676390   7  HPFS/NTFS
+/dev/sda3             0         -          0   0  Empty
+/dev/sda4             0         -          0   0  Empty
+Successfully wrote the new partition table
+
+Re-reading the partition table ...
+
+
+Disk /dev/sda: 9729 cylinders, 255 heads, 63 sectors/track
+Old situation:
+Units = sectors of 512 bytes, counting from 0
+
+   Device Boot    Start       End   #sectors  Id  System
+/dev/sda1   *        63 107422874  107422812   7  HPFS/NTFS
+/dev/sda2     107422875 149099264   41676390   7  HPFS/NTFS
+/dev/sda3             0         -          0   0  Empty
+/dev/sda4             0         -          0   0  Empty
+New situation:
+Units = sectors of 512 bytes, counting from 0
+
+   Device Boot    Start       End   #sectors  Id  System
+/dev/sda1   *        63 107422874  107422812   7  HPFS/NTFS
+/dev/sda2     107422875 149099264   41676390   7  HPFS/NTFS
+/dev/sda3             0         -          0   0  Empty
+/dev/sda4             0         -          0   0  Empty
+Successfully wrote the new partition table
+
+Re-reading the partition table ...
+
+Udp-sender 20100130
+Using mcast address 232.168.110.42
+UDP sender for /home/cloned/2011-10-06-image/sda1.img.gz at 192.168.110.42 on eth0.11 
+Broadcasting control to 192.168.110.255
+New connection from 192.168.110.11  (#0) 00000009
+New connection from 192.168.110.12  (#1) 00000009
+Starting transfer: 00000009
+bytes=
+  3 587 584  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes=  7 827 456  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes=
+ 12 067 328  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes= 16 307 200  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes=994 902 272  re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes=
+999
+ 305 216  re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes=
+    
+ 980 024K re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes=     984 324K re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes=
+    
+bytes=  1 001 523K re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes=  1 005 663K re-xmits=0006140 (  0.8%) slice=0112 -   0
+bytes= 21 494 450K re-xmits=0013012 (  0.0%) slice=0112 -   0
+bytes= 21 524 070K re-xmits=0013012 (  0.0%) slice=0112 -   0
+bytes=
+ 21 528 370K re-xmits=0013012 (  0.0%) slice=0112 -   0
+bytes= 21 680 891K re-xmits=0015922 (  0.1%) slice=0112 -   0
+Transfer complete.
+Disconnecting #0 (192.168.110.11)
+Disconnecting #1 (192.168.110.12)
+Udp-sender 20100130
+Using mcast address 232.168.110.42
+UDP sender for /home/cloned/2011-10-06-image//sda2.img.gz at 192.168.110.42 on eth0.11 
+Broadcasting control to 192.168.110.255
+New connection from 192.168.110.11  (#0) 00000009
+New connection from 192.168.110.12  (#1) 00000009
+Starting transfer: 00000009
+bytes=
+  3 587 584  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes=
+  7
+ 827 456  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes= 12 067 328  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes= 16 307 200  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes= 20 547 072  re-xmits=0000000 (  0.0%) slice=0112 -   0
+bytes=  6 163 930K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 168 230K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 172 530K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 176 829K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 181 129K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 185 429K re-xmits=0005580 (  0.1%) slice=0112 -   0
+bytes=  6 186 442K re-xmits=0005580 (  0.1%) slice=0112 -   0
+Transfer complete.
+Disconnecting #0 (192.168.110.11)
+Disconnecting #1 (192.168.110.12)
+0+1 records in
+0+1 records out
+448 bytes (448 B) copied
+, 0.0150105 s, 29.8 kB/s
+Cloning finished at: Tue Nov 15 15:52:25 MSK 2011

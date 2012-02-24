@@ -1,0 +1,27 @@
+1+0 records in
+1+0 records out
+448 bytes (448 B) copied, 0.000917105 s, 488 kB/s
+ntfsclone v2.0.0 (libntfs 10:0:0)
+NTFS volume version: 3.1
+Cluster size       : 4096 bytes
+Current volume size: 55000473600 bytes (55001 MB)
+Current device size: 55000479744 bytes (55001 MB)
+Scanning volume ...
+  0.00 percent completed  0.02 percent completed 33.39 percent completed 33.41 percent completed 33.49 percent completed 85.05 percent completed 85.07 percent completed 99.99 percent completed100.00 percent completed
+Accounting clusters ...
+Space in use       : 50413 MB (91.7%)   
+Saving NTFS to image ...
+  0.00 percent completed  0.00 percent completed 23.29 percent completed 23.30 percent completed 23.31 percent completed 49.24 percent completed 77.16 percent completed 77.17 percent completed 97.43 percent completed 99.99 percent completed100.00 percent completed100.00 percent completed
+Syncing ...
+ntfsclone v2.0.0 (libntfs 10:0:0)
+NTFS volume version: 3.1
+Cluster size       : 4096 bytes
+Current volume size: 21338304512 bytes (21339 MB)
+Current device size: 21338311680 bytes (21339 MB)
+Scanning volume ...
+  0.00 percent completed  0.69 percent completed 86.64 percent completed 99.70 percent completed100.00 percent completed
+Accounting clusters ...
+Space in use       : 12333 MB (57.8%)   
+Saving NTFS to image ...
+  0.00 percent completed  0.01 percent completed 38.55 percent completed 66.87 percent completed 87.17 percent completed 99.99 percent completed100.00 percent completedSyncing ...
+Imaging finished at: Tue Nov 15 15:52:25 MSK 2011

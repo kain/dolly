@@ -1,0 +1,4 @@
+#!ipxe
+#
+kernel live_debian/vmlinuz boot=live config httpfs=http://drbl.ctd.loc/live_debian/filesystem.squashfs
+initrd live_debian/initrd.img
