@@ -1,6 +1,8 @@
 package IAD::Images;
+#Класс реализует логику образов
 use common::sense;
 
+#создание объекта
 sub new {
 	my($class) = @_;
 	
@@ -13,6 +15,7 @@ sub new {
 	return $self;
 };
 
+#Инициализация, получение всех образов из базы данных
 sub init {
 	my($self) = @_;
 	my $data = $self->{'db'}->getAllImages();
@@ -23,11 +26,13 @@ sub init {
 	};
 };
 
+#Возвращает список всех образов
 sub getMap {
 	my($self) = @_;
 	return [map { {'imageId' => $_, %{ $self->{'images'}->{$_} } } } sort { $a <=> $b } keys %{ $self->{'images'} } ];
 };
 
+#Добавление нового образа
 sub addImage {
 	my($self, $name, $path, $addDate) = @_;
 	$addDate //= time();
@@ -37,6 +42,8 @@ sub addImage {
 	};
 	return ($imageId, $addDate);
 };
+
+#Получение путя к образу
 sub getImagePath {
 	my($self, $imageId) = @_;
 	if(exists $self->{'images'}->{$imageId}) {
@@ -47,6 +54,7 @@ sub getImagePath {
 	};
 };
 
+#Удаление образа
 sub deleteImage {
 	my($self, $imageId) = @_;
 	if(exists $self->{'images'}->{$imageId}) {

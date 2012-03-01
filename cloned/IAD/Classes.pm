@@ -1,5 +1,5 @@
 package IAD::Classes;
-
+#Класс реализующий логику групп\компьютеров
 use common::sense;
 use Storable qw/dclone/;
 use Data::Dumper;
@@ -19,6 +19,7 @@ sub new {
 	return $self;
 };
 
+#Инициализация, запрос к базе о текущем состоянии сети
 sub init {
 	my($self) = @_;
 	my $data = $self->{'db'}->{'dbh'}->selectall_arrayref('SELECT * FROM classes');
@@ -40,6 +41,7 @@ sub init {
 	};
 };
 
+#Получение информации о всех группах\компьютерах
 sub getMap {
 	my($self) = @_;
 
@@ -51,6 +53,7 @@ sub getMap {
 	return $map;
 };
 
+#Получение информации о группе по ID группы
 sub getClassStruct {
 	my($self, $classId, %opts) = @_;
 	my $classStruct = {'classId' => $classId, 'name' => $self->{'classes'}->{$classId}, 'children' => []};
@@ -64,6 +67,7 @@ sub getClassStruct {
 	return $classStruct;
 };
 
+#Получение информации о компьютере по ID
 sub getComputerStruct {
 	my($self, $computerId) = @_;
 	
@@ -76,16 +80,19 @@ sub getComputerStruct {
 	return $computerStruct;
 };
 
+#Получение MAC адреса по ID компьютера
 sub getMac {
 	my($self, $computerId) = @_;
 	return $self->{'computers'}->{$computerId}->{'mac'};
 };
 
+#Проверка существования MAC адреса в текущем состоянии сети
 sub macExists {
 	my($self, $mac) = @_;
 	return exists $self->{'macToId'}->{$mac} ? $self->{'macToId'}->{$mac} : undef;
 };
 
+#Добавление новой группы
 sub addClass {
 	my($self, $name) = @_;
 	my $classId = $self->{'db'}->addClass($name);
@@ -93,6 +100,7 @@ sub addClass {
 	return $classId;
 };
 
+#Удаление
 sub deleteClass {
 	my($self, $classId) = @_;
 	if(exists $self->{'computersInClasses'}->{$classId}) {
@@ -108,9 +116,9 @@ sub deleteClass {
 		IAD::Config::set({'add_new_to_group' => undef});
 		IAD::Config::save();
 	};
-	
 };
 
+#Обновление информации о группе
 sub updateClass {
 	my($self, $classId, $name) = @_;
 	if(!exists $self->{'classes'}->{$classId}) {
@@ -122,6 +130,7 @@ sub updateClass {
 	};
 };
 
+#Добавления компьютера
 sub addComputer {
 	my($self, $classId, $name, $plainMac, $ip) = @_;
 	if(!exists $self->{'classes'}->{$classId}) {
@@ -154,6 +163,7 @@ sub addComputer {
 	return $computerId;
 };
 
+#Удаление
 sub deleteComputer {
 	my($self, $classId, $computerId) = @_;
 	$self->{'db'}->deleteComputer($computerId);
@@ -163,6 +173,7 @@ sub deleteComputer {
 	
 };
 
+#Обновление информации о компьютере
 sub updateComputer {
 	my($self, $computerId, %opts) = @_;
 	my $computer = $self->{'computers'}->{$computerId};
@@ -190,17 +201,8 @@ sub updateComputer {
 			('classId', 'name', 'mac', 'ip', 'updateDate', 'imageId'));
 	};
 };
-sub updateComputerByMac {
-	my($self, $mac, %opts) = @_;
-	my $computerId = $self->{'macToId'}->{$mac};
-	if(!defined $computerId) {
-		return undef;
-	}
-	else {
-		return $self->updateComputer($computerId, %opts);
-	};
-};
 
+#Автоматическое добавление нового компьютера если он не существует и если задана соответсвующая опция
 sub addIfNotExists {
 	my($self, $mac, $ip) = @_;
 	if(!defined $IAD::Config::add_new_to_group || $self->macExists($mac)) {
@@ -215,6 +217,8 @@ sub addIfNotExists {
 	};
 };
 
+#Проверка MAC адреса и приведение к стандартному виду
+#0:::::ff, 00-00-00-00-00-FF -> 00:00:00:00:00:FF
 sub parseMac {
 	my($self, $mac) = @_;
 	$mac = lc $mac;
@@ -225,45 +229,12 @@ sub parseMac {
 	return $mac =~ /^(?:[a-f0-9]{2}:){5}[a-f0-9]{2}$/ ? $mac : undef;
 };
 
+#Проверка IP адреса
 sub parseIp {
 	my($self, $ip) = @_;
 	return $ip =~ /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 		? $ip
 		: undef;
 };
-
-#
-#package IAD::Classes::Class;
-#sub new {
-#	my($class, $name, $classId) = @_;
-#	my $self = {
-#		'name' => $name,
-#		'classId' => $classId,
-#		'computers' => [],
-#	};
-#};
-#
-#sub addComputer {
-#	my($self, $name, $mac) = @_;
-#	
-#	my $computerId = $self->{'db'}->addComputer($classId, $name, $mac);
-#	
-#	$self->{'computers'}->{$computerId} = {'name' => $name, 'mac' => $mac , 'updateDate' => undef, 'imageId' => undef};
-#	$self->{'computersInClasses'}->{$classId} ||= {};
-#	$self->{'computersInClasses'}->{$classId}->{$computerId} = 1;
-#	return $computerId;
-#};
-#
-#sub clone {
-#	my($self, $withComputers) = @_;
-#	
-#};
-#
-#package IAD::Classes::Computer;
-#
-#sub new {
-#	my($class, $computerId, $name, $mac, $updateDate, $imageId) = @_;
-#	my $self = {
-#};
 
 1;

@@ -1,9 +1,10 @@
 package IAD::DataBase;
-##!!rewrite to AE::DBI
+#Класс реализует общение с базой данных
+##may be rewrite to AE::DBI
 use common::sense;
 use DBI;
 
-
+#Создание объекта
 sub new {
 	my($class, $dbfile) = @_;
 	my $self = bless {'dbfile' => $dbfile}, $class;
@@ -11,6 +12,7 @@ sub new {
 	return $self;
 };
 
+#Инициализация, автоматическое создание методов класса  по списку запросов
 sub init {
 	my($self) = @_;
 	$self->{'dbh'} = DBI->connect("dbi:SQLite:dbname=" . $self->{'dbfile'}, "", "") || die $!;
@@ -62,11 +64,12 @@ sub init {
 
 };
 
+#Создание базы данных, не реализованно
 sub createDataBase {
 	my($self) = @_;
-	#$self->{'dbh'}->do('DROP TABLE IF EXISTS `classes`');
 };
 
+#Последний auto_incremenet
 sub lastInsertId {
 	my($self) = @_;
 	return $self->{'dbh'}->sqlite_last_insert_rowid();

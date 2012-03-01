@@ -163,10 +163,6 @@ function classesTabHandler() {
 
 	editClassesGrid.getView().on('beforedrop', function(node, data, over, position) {
 		var cancel = false;
-		//console.log(over);
-		//console.log(over.isRoot());
-		//console.log(position);
-		//over.parentNode.isRoot()
 		if(position != 'append') {
 			data.records.forEach(function(el) {
 				if(el.isLeaf()) {
@@ -186,9 +182,6 @@ function classesTabHandler() {
 		if(cancel) {
 			return false;
 		};
-		//console.log(over);
-		//console.log(data.records[0].parentNode);
-		//return false;
 	});
 	
 	editClassesGrid.getView().on('drop', function(node, data, over) {
@@ -206,13 +199,6 @@ function classesTabHandler() {
 			},
 			loadMsg: _('Moving computers')
 		});
-			
-		//console.log(computersId);
-		
-//		
-//		console.log('dropped');
-//		console.log(node);
-//		console.log(data);
 	});
 	
 	
@@ -576,23 +562,15 @@ function cloningTabHandler() {
 		});
 	});
 	
-//	cloningStateGrid.on('scrollershow', function(scroller) {
-//	  if (scroller && scroller.scrollEl) {
-//	    scroller.clearManagedListeners(); 
-//	    scroller.mon(scroller.scrollEl, 'scroll', scroller.onElScroll, scroller); 
-//	  }
-//	}); // bug http://www.sencha.com/forum/showthread.php?137993-4.0.2-only-layout-fit-grid-scrollbar-when-used-does-not-scroll-content/page3
-
 };
 
 function settingsTabHandler() {
-	//settingsTab.down('#add_new_to_group').getStore().load = Ext.emptyFn;
 	
 	var langs = [];
 	for(var key in lang.langs) {
 		langs.push({lang: key, name: lang.langs[key]});
 	};
-	//consolge.log(langs);
+
 	updateGrid(settingsTab.down('#language'), langs);
 	settingsTab.down('#language').select(lang.current);
 	
@@ -694,7 +672,6 @@ function init() {
 			};
 		},
 		loadMsg: _('Loading data')
-		//fail: function(
 	});
 };
 
@@ -758,44 +735,19 @@ function updateCloningStateGrid(stateLog, mode) {
 			IADWindow.getDockedComponent('statusbar').down('#state').setText(state);
 		};
 	};
-	//cloningStateGrid.invalidateScrollOnRefresh = false;
 	updateGrid(cloningStateGrid, stateLog);
+	//try to work around with grid scroller bug
 	var cloningStateGridScroller = cloningStateGrid.getVerticalScroller();
 	if(cloningStateGridScroller) {
-		//console.log('scroller getted');
+
  		var el = cloningStateGridScroller.scrollEl,
             elDom = el && el.dom;
         if(elDom) {
-        	//console.log(elDom.scrollHeight - elDom.clientHeight);
             cloningStateGridScroller.setScrollTop(elDom.scrollHeight - elDom.clientHeight);
     	};
 	};
 	cloningStateGrid.invalidateScroller();
-//cloningStateGrid.getView().scrollToTop = function() {};
-	//console.log(stateLog.length - 1);
-	//cloningStateGrid.getView().focusRow(stateLog.length - 1);
-	//console.log(cloningStateGrid.getStore().getAt(4));
-	//cloningStateGrid.getSelectionModel().select(stateLog.length - 1).scrollIntoView();
-	//gridRevealRow(cloningStateGrid, stateLog.length - 1);
-	
 };
-//
-//function smoothScrollIntoView(element, container) {
-//  var c = Ext.getDom(container) || Ext.getBody().dom,
-//     el = element.dom,
-//     o = element.getOffsetsTo(c),
-//     t = o[1] + c.scrollTop,
-//     ch = c.clientHeight;
-//  var newCTop = t - ch / 2;
-//  if (newCTop < 0)
-//    newCTop = 0;
-//  container.scrollTo('top', newCTop, true);
-//}
-//
-//function gridRevealRow(grid, rowIndex) {
-//  var row = new Ext.Element(grid.getView().getRow(rowIndex));
-//  smoothScrollIntoView(row, grid.getView().scroller);
-//}
 
 
 function updateGrid(grid, data) {

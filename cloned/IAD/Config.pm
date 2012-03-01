@@ -1,7 +1,8 @@
 package IAD::Config;
+#Класс реализует управление настройками
 use common::sense;
 
-#default config
+#Стандартные настройки
 sub getDefault {
 	return {
 		'ipxe_normal_boot' => './ipxe/normalboot',
@@ -13,8 +14,10 @@ sub getDefault {
 	};
 };
 
+#Список всех ключей
 our @NAMES = sort keys %{getDefault()};
 
+#Применение настроек
 sub set {
 	my($config) = @_;
 	foreach(keys%$config) {
@@ -22,6 +25,7 @@ sub set {
 	};
 };
 
+#Получение текущих настроек
 sub get {
 	my $config = {};
 	foreach(@NAMES) {
@@ -30,6 +34,7 @@ sub get {
 	return $config;
 };
 
+#Инициализация базы данных
 sub create {
 	my $db = $DI::db;
 	foreach(@NAMES) {
@@ -37,6 +42,7 @@ sub create {
 	};
 };
 
+#Сохранение\обновление настроек
 sub save {
 	my $db = $DI::db;
 	foreach(@NAMES) {
@@ -44,6 +50,7 @@ sub save {
 	};
 };
 
+#Загрузка настроек из базы
 sub load {
 	my $db = $DI::db;
 	my $config = { map { @$_ } @{$db->getConfig} };
@@ -56,6 +63,7 @@ sub load {
 
 };
 
+#Загрузка стандартных настроек
 set(getDefault());
 
 1;

@@ -1,13 +1,17 @@
 package IAD::FCGIHandler;
+#Класс реализует базовый обработчик подключений через FastCGI
 use common::sense;
 use URI;
 use Time::HiRes;
 
+#Создание объекта
 sub new {
 	my($class) = @_;
 	my $self = {'adminAPI' => $DI::adminAPI, 'cloning' => $DI::cloning};
 	return bless $self, $class;
 };
+
+#Обработка запросов, в зависимости от типа запросов перенаправляет обработку IAD::adminAPI или IAD::Cloning
 sub handleRequest {
 	
     my($self, $request) = @_;

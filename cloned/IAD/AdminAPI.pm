@@ -1,8 +1,10 @@
 package IAD::AdminAPI;
+#Класс обработки запросов от веб интерфейса
 use common::sense;
 use JSON::XS;
 use Data::Dumper;
 
+#Создание объекта
 sub new {
 	my($class) = @_;
 	my $self = {
@@ -15,6 +17,7 @@ sub new {
 	return bless $self, $class;
 };
 
+#обработка запросов
 sub handleRequest {
 	
 	my($self, $content) = @_;
@@ -211,6 +214,8 @@ sub handleRequest {
 	return $response->json, 'Content-Type' => 'application/json';
 
 };
+
+#Подготовка информации о клонируемых компьютерах
 sub getCloningClassesStruct {
 	my($self) = @_;
 	
@@ -225,6 +230,7 @@ sub getCloningClassesStruct {
 	return $map;
 };
 
+#Подготовока информации о всех компьютерах
 sub getClassesStruct {
 	my($self) = @_;
 	
@@ -240,17 +246,20 @@ sub getClassesStruct {
 	return $map;
 };
 
+#Подготовка информации о текущем статусе
 sub getStateLogStruct {
 	my($self) = @_;
 	return [ map { {'date' => $_->[0], 'state' => $_->[1], 'params' => [@{$_}[2..$#$_]] } }  @{ $self->{'cloning'}->{'state'}->getLog() } ];
 };
 
-
+#Создание 'тикета' для клиента
+#Позволяет отключать предыдущий интерфейс при заходе с другого компьютера
 sub genTicket {
 	my($self) = @_;
 	return $self->{'ticket'} = join '', map { chr(int rand(2) ?  97 + int(rand(6)) : 48 + int(rand(10))) } (1..16);
 };
 
+#Получение отложенных уведомлений для интерфейса(изменение IP адресов и т.п.)
 sub getNotices {
 	my($self) = @_;
 	my $notices = delete $self->{'notices'};
@@ -258,31 +267,37 @@ sub getNotices {
 	return $notices;
 };
 
+#Регистрация нового уведомления
 sub addNotice {
 	my($self, $name, @params) = @_;
 	push(@{$self->{'notices'}}, [$name, @params]);
 };
 
 package IAD::AdminAPI::Response;
+#Класс реализующий ответ клиенту, поддерживает цепочку вызовов
 use JSON::XS;
 
+#Создание объекта
 sub new {
 	my($class) = @_;
 	return bless {'success' => undef}, $class;
 };
 
+#Ответ успешный
 sub ok {
 	my($self, $ok) = @_;
 	$self->{'success'} = defined $ok ? $ok : 1;
 	return $self;
 };
 
+#Добавление параметров ответа
 sub add {
 	my($self, %add) = @_;
 	$self->{$_} = $add{$_} foreach keys%add;
 	return $self;
 };
 
+#Ответ не успешен
 sub fail {
 	my($self, $fail) = @_;
 	$self->add('fail' => $fail);
@@ -290,11 +305,13 @@ sub fail {
 	return $self;
 };
 
+#Ответ задан?
 sub isset {
 	my($self) = @_;
 	return defined $_[0]->{'success'};
 };
 
+#Сериализация ответа в JSON
 sub json {
 	my($self) = @_;
 	return encode_json({%{$self}});

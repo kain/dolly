@@ -1,8 +1,10 @@
 package IAD::Cloning;
+#Класс реализующий логику клонирования(и снятия) образа на целевые компьютеры
 use common::sense;
 use File::Slurp qw/slurp/;
 use AnyEvent::Run;
 
+#Инициализация
 sub new {
 	my($class) = @_;
 	my $self = bless {
@@ -20,6 +22,7 @@ sub new {
 	return $self;
 };
 
+#Добавление компьютера для клонирования
 sub addComputer {
 	my($self, $computer) = @_;
 	if($self->{'isCloning'}) {
@@ -39,6 +42,7 @@ sub addComputer {
 	};
 };
 
+#Получение информации о всех зарегистированных компьютеров для клонирования
 sub getMap {
 	my($self) = @_;
 
@@ -53,6 +57,7 @@ sub getMap {
 	return [sort { $b->{'classId'} <=> $a->{'classId'} } values %$map];
 };
 
+#Получение статуса всех клонируемых компьютеров
 sub getComputersState {
 	my($self) = @_;
 	my $state = {};
@@ -62,6 +67,7 @@ sub getComputersState {
 	return $state;
 };
 
+#Запуск процесса клонирования\снятия образа
 sub start {
 	my($self, $mode, @params) = @_;
 	if($self->{'isCloning'}) {
@@ -89,7 +95,7 @@ sub start {
 };
 
 
-
+#Заверешение процесса клонирования(плановое или по инициативе пользователя)
 sub end {
 	my($self, $state, @params) = @_;
 	if(!$self->{'isCloning'}) {
@@ -105,6 +111,8 @@ sub end {
 	$self->{'isCloning'} = 0;
 
 };
+
+#Список всех состояний процесса клонирования
 my @cloningStatus = (
 	'notRunned',
 	'waitAllReady',
@@ -116,6 +124,7 @@ my @cloningStatus = (
 	'error'
 );
 
+#Список состояний целевых компьютеров
 my @clientStatus = (
 	'none',
 	'booting',
@@ -126,6 +135,7 @@ my @clientStatus = (
 	'complete'
 );
 
+#Разбор лога от скриптов клонирования\создания образа dolly
 sub parseLog {
 	my($self, $log) = @_;
 	if(!exists $self->{'logFp'}) {
@@ -213,30 +223,26 @@ sub parseLog {
 	}
 	else {
 		given($log) {
-#			when(/^ntfsclone v\d/) {
-#				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'imaging';
-#				$self->{'cloningScriptState'}->{'partition'}++;
-#			}
-#			when(/^Scanning volume \.{3}/) {
-#				$self->{'state'}->set('scanning', $self->{'cloningScriptState'}->{'partition'}, '0.00');
-#			}
-#			when(/^\s*?([0-9.]+) percent completed/) {
-#				my $percent = $1;
-#				given($self->{'state'}->get()) {
-#					when(['scanning', 'saving']) {
-#						$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'partition'}, $percent);
-#					}
-#				};
-#			}
-#			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
-#				$self->{'state'}->set('scanned', $1, $2);
-#			}
-#			when(/^Saving NTFS to image \.{3}/) {
-#				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
-#			}
-			when(/^Saving partition /){
+			when(/^ntfsclone v\d/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'imaging';
 				$self->{'cloningScriptState'}->{'partition'}++;
+			}
+			when(/^Scanning volume \.{3}/) {
+				$self->{'state'}->set('scanning', $self->{'cloningScriptState'}->{'partition'}, '0.00');
+			}
+			when(/^\s*?([0-9.]+) percent completed/) {
+				my $percent = $1;
+				given($self->{'state'}->get()) {
+					when(['scanning', 'saving']) {
+						$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'partition'}, $percent);
+					}
+				};
+			}
+			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
+				$self->{'state'}->set('scanned', $1, $2);
+			}
+			when(/^Saving NTFS to image \.{3}/) {
+				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -255,12 +261,14 @@ sub parseLog {
 	};
 };
 
+#Подсчет процента выполнения
 sub mathPercent {
 	my($self, $complete, $all) = @_;
 	return undef if !defined $all || $all == 0;
 	return sprintf("%.1f", $complete / $all * 100);
 };
 
+#Звацуск скрипта клонирования\снятия образа dolly
 sub startCloningScript {
 	my($self) = @_;
 	if(defined $self->{'cloningRun'}) {
@@ -306,16 +314,7 @@ sub startCloningScript {
 	};
 };	
 
-#sub endCloningScript {
-#	my ($self) = @_;
-#	$self->{'state'}->set(defined $error ? 'error' : 'complete');
-#	
-#	#$_->{'status'} = 'complete' foreach values %{ $self->{'macs'} };
-#	$self->{'macs'} = {};
-#	$self->{'isCloning'} = 0;
-#	$self->{'cloningRun'} = undef;
-#};
-
+#Обработка запросов от целевых компьютеров для обеспечения обычной загрузки и загрузки в режиме клонирования
 sub handleRequest {
 	my($self, $action, $params) = @_;
 
@@ -388,21 +387,25 @@ sub handleRequest {
 };
 
 package IAD::Cloning::State;
+#Класс реализует состояние процесса клонирования
 use common::sense;
 use Storable qw/dclone/;
 
+#Инициализация
 sub new {
 	my($class, %conf) = @_;
 	my $self = bless {}, $class;
 	return $self->clear()->set('notRunned');
 };
 
+#Очистка списка состояний
 sub clear {
 	my($self) = @_;
 	$self->{'log'} = [];
 	return $self
 };
 
+#Добавление нового состояние
 sub set {
 	my($self, $state, @params) = @_;
 	$self->{'state'} = $state;
@@ -410,20 +413,21 @@ sub set {
 	return $self
 };
 
+#Обновление предыдущего состояния
 sub updateLast {
 	my($self, @params) = @_;
 	$self->{'log'}->[-1] = [(@{$self->{'log'}->[-1]})[0..1], @params];
 	return $self;
 };
 
+#Получение текущего состояния
 sub get {
 	return $_[0]->{'state'};
 };
 
+#Получение всех зарегистрированных состояний
 sub getLog {
 	return dclone $_[0]->{'log'};
 };
-
-#package IAD::Cloning::Computer;
 
 1;
