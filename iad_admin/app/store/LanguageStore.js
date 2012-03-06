@@ -35,3 +35,4 @@ Ext.define('IAD.store.LanguageStore', {
         }, cfg)]);
     }
 });
+
