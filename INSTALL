@@ -1,0 +1,73 @@
+DOLLY installation:
+
+Main part:
+- install Debian 6 (Squeeze) on virtual machine (Virtualbox, etc.) or physical server
+- add regular user at install time (for ex. "kasatkin")
+- become root (sudo -i)
+- add system user "cloned" (useradd --create-home --system --shell /bin/bash cloned)
+- generate ssh-keys for user "cloned" (su -c "ssh-keygen -t rsa" cloned) with empty passphrase
+
+Web part:
+- install packages (apt-get update && apt-get install ...):
+  lighttpd
+  nginx
+  fcgiwrap
+  php5-cgi
+- stop web servers:
+  /etc/init.d/lighttpd stop
+  /etc/init.d/nginx stop
+- lighttpd configs
+  echo 'server.port = "81"' >> /etc/lighttpd/lighttpd.conf
+  /etc/init.d/lighttpd restart
+- nginx configs
+  /etc/nginx/site-available/dolly
+  rm /etc/nginx/sites-enabled/default
+  ln -s /etc/nginx/sites-available/dolly /etc/nginx/sites-enabled/
+  /etc/init.d/nginx restart
+
+Perl part:
+- enter 'cpan' shell under 'root'
+- in case of network proxy configure it with those commands:
+  o conf init /proxy/
+  o conf commit
+- install perl modules:
+  AnyEvent
+  AnyEvent::FCGI
+  AnyEvent::Run
+  common::sense
+  DBD::SQLite
+  DBI
+  File::Slurp
+  JSON::XS
+  URI
+
+Main Dolly part:
+- install packages (apt-get update && apt-get install ...):
+  dnsmasq
+  git
+  openssh-server
+  screen
+  udpcast
+  wakeonlan
+- login to cloned user shell (su - cloned)
+- configure git for github repository (https://github.com/kain/dolly)
+- get Dolly sources
+- make links to Dolly scripts in /usr/local/bin
+- start perl daemon (cd dolly && perl ./iad_daemon.pl)
+- go to web interface (http://ip.address/iad_admin/index.html)
+
+Debian Live part:
+- install packages (apt-get update && apt-get install ...):
+  live-boot
+  live-build
+  live-config
+  live-manual-txt
+- debian live (configs, scripts, hacks)
+- server side settings (user, ssh-keys, daemons)
+- permissions
+- ipxe (sources with custom menu)
+- dnsmasq configs
+- DHCP server (stand alone or combined with cloning server)
+...
+FIXME
+
