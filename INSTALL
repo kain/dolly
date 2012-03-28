@@ -2,7 +2,7 @@ DOLLY installation:
 
 Main part:
 - install Debian 6 (Squeeze) on virtual machine (Virtualbox, etc.) or physical server
-- add regular user at install time (for ex. "kasatkin")
+- add regular user at install time
 - become root (sudo -i)
 - add system user "cloned" (useradd --create-home --system --shell /bin/bash cloned)
 - generate ssh-keys for user "cloned" (su -c "ssh-keygen -t rsa" cloned) with empty passphrase
@@ -68,6 +68,23 @@ Debian Live part:
 - ipxe (sources with custom menu)
 - dnsmasq configs
 - DHCP server (stand alone or combined with cloning server)
+fix DNS resovling in initrd:
+  sudo mkdir -p /home/kasatkin/cloned/live/config/chroot_local-includes/etc/live/
+  echo "LIVE_DNS=true" | sudo tee /home/kasatkin/cloned/live/config/chroot_local-includes/etc/live/boot.conf
+
+disable creating "live user" in lb2 scripts
+put pub key to /root/.ssh/authorized_keys
+root without password
+put predefined SSH host keys to /etc/ssh
+
+disable key deletion in lb2 "hack scripts":
+diff /usr/share/live/build/scripts/build/lb_chroot_hacks lb_chroot_hacks.bak 
+132c132
+< #rm -f chroot/etc/ssh/ssh_host_*_key chroot/etc/ssh/ssh_host_*_key.pub
+---
+> rm -f chroot/etc/ssh/ssh_host_*_key chroot/etc/ssh/ssh_host_*_key.pub
+
+
 ...
 FIXME
 
