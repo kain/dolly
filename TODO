@@ -1,0 +1,21 @@
+DOLLY TODO
+
+Scripts:
+when cloning first partition wait for all computers, all other partitions wait XX minutes
+replace gzip with xz
+move main scripts to /usr/local/bin
+
+Web-interface:
+add support for WakeOnLan via wakeonlan (for ex.: wakeonlan -i 192.168.110.255 14:da:e9:47:15:ca)
+write essential cloning logs to /var/log
+logrotate logs
+fix typos
+do not show "path to image" in web interface
+add ability to delete images from hard disk
+
+Main:
+disable display power saving (via DPMS) or set timeout to XX hours
+copy Clonezilla functionality (clone Vista, Win7, Linux, resize, GPT, etc...)
+use dhcp-probe package - network DHCP or BootP server discover
+use os-prober package - utility to detect other OSes on a set of drivesuse HDT project http://hdt-project.org/wik
+use HDT project (http://hdt-project.org/wiki) - analyze hardware on first booted computer
