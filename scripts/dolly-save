@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# TODO:
+# - automate XEN start|stop|snapshot commands
+#
+#
+
+set -e
+
+# Print usage information
+usage() {
+  echo 'Usage:
+        dolly -h|--help
+        dolly -m|--mode save -t|--list "192.168.0.1" "dirname"
+        dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." "/path/to/image/"'
+}
+
+E_SHELL=64
+E_OPTERR=65
+E_PATHERR=66
+E_MODE=67
+E_GETOPT=68
+E_LIST=69
+E_IFACE=70
+
+# Check current shell
+if [ "${SHELL}" != "/bin/bash"  ]
+then
+  echo "Error: only BASH shell supported"
+  echo
+  exit $E_SHELL
+fi
+
+# Check if any parameters provided
+if [ "$#" -eq 0 ]
+then
+  usage
+  exit $E_OPTERR
+fi
+
+# For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
+ARGS=`getopt --name 'dolly' --options hm:t: --longoptions help,mode:,list: -- "$@"`
+
+eval set -- "$ARGS"
+
+while true
+do
+  case "$1" in
+    -h|--help)		usage;			exit 0;;
+    -m|--mode)		MODE=$2;		shift 2;;
+    -t|--list)		LIST=$2;		shift 2;;
+    --)			shift;			break;;
+    *)			echo "Getopt error!";	exit $E_GETOPT;;
+  esac
+done
+
+# Check which mode is used
+shopt -s nocasematch
+if [ "$MODE" == "save" ]
+then
+  MODE=save
+elif [ "$MODE" == "restore" ]
+then
+  MODE=restore
+else
+  echo "Error: wrong mode is selected"
+  exit $E_MODE
+fi
+shopt -u nocasematch
+
+if [ "$MODE" == "restore" ]
+then
+  exit 1
+fi
+
+# Creating directory for new image
+# FIXME how web interface will know path to this image?
+#IMAGEPATH="/home/cloned/`date +%Y-%m-%d`-$1"
+IMAGEPATH="/home/cloned/$1"
+mkdir "${IMAGEPATH}" || exit $E_PATHERR
+cd "${IMAGEPATH}"
+
+# Check if single address provided
+HOSTCOUNT=`echo $LIST | wc -w`
+if [ "${HOSTCOUNT}" -ne "1" ]
+then
+  echo "Error: multiple targets not allowed in save mode"
+  exit $E_LIST
+fi
+
+CLONE=$LIST
+
+echo "Imaging started at: `date`"
+
+# Dumping partition table
+ssh root@${CLONE} "sfdisk -d /dev/sda" > sda-pt.sf
+
+# Dumping MBR boot code
+ssh root@${CLONE} "dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
+
+# Copy Dolly script to target
+scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
+
+# TODO: if image have more than one net interface?
+for PART in `ssh root@${CLONE} "ls /dev/sda?*" | awk 'BEGIN { FS = "/" } ; { print $3 }'`
+do
+  echo "Saving partition ${PART}"
+  # Run sender and put process in background
+  ssh root@${CLONE} /usr/bin/screen -d -m /sbin/dolly-sender /dev/${PART}
+  # Wait for udpcast to settle
+  sleep 5
+  # Use udpcast to receive data
+  /usr/bin/udp-receiver --nokbd --stat-period 1 > "${IMAGEPATH}/${PART}.img.gz"
+done
+
+ssh root@${CLONE} poweroff
+
+echo "Imaging finished at: `date`"
+
+exit 0

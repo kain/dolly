@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ntfsclone --save-image --output - $1 | gzip --stdout | /usr/bin/udp-sender --full-duplex --min-receivers 1 --nokbd --max-bitrate 80m

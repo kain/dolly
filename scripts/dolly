@@ -1,0 +1,163 @@
+#!/bin/bash
+#
+# dolly-project.org
+#
+
+set -e
+
+# Print usage information
+usage() {
+  echo 'Usage:
+        dolly -h|--help
+        dolly -m|--mode save -t|--list "192.168.0.1" -n|--name "name" "comment"
+        dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." -n|--name "name"'
+}
+
+E_SHELL=64
+E_OPTERR=65
+E_PATHERR=66
+E_MODE=67
+E_GETOPT=68
+E_LIST=69
+E_IFACE=70
+
+# Check current shell
+if [ "${SHELL}" != "/bin/bash"  ]
+then
+  echo "Error: only BASH shell supported"
+  echo
+  exit $E_SHELL
+fi
+
+# Check if any parameters provided
+if [ "$#" -eq 0 ]
+then
+  usage
+  exit $E_OPTERR
+fi
+
+# For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
+ARGS=`getopt --name 'dolly' --options hm:t: --longoptions help,mode:,list: -- "$@"`
+
+eval set -- "$ARGS"
+
+while true
+do
+  case "$1" in
+    -h|--help)		usage;			exit 0;;
+    -m|--mode)		MODE=$2;		shift 2;;
+    -t|--list)		LIST=$2;		shift 2;;
+    --)			shift;			break;;
+    *)			echo "Getopt error!";	exit $E_GETOPT;;
+  esac
+done
+
+# Check which mode is used
+shopt -s nocasematch
+if [ "$MODE" == "save" ]
+then
+  MODE=save
+elif [ "$MODE" == "restore" ]
+then
+  MODE=restore
+else
+  echo "Error: wrong mode is selected"
+  exit $E_MODE
+fi
+shopt -u nocasematch
+
+if [ "$MODE" == "save" ]
+then
+  exit 1
+fi
+
+# TODO how many arguments provided from perl daemon?
+#if [ "$#" -ne 1 ]
+#then
+#  usage
+#  exit $E_OPTERR
+#fi
+
+# Check if path provided and exist
+IMAGEPATH="/home/cloned/$1"
+if [ ! -d "$IMAGEPATH" ]
+then
+  echo "Error: image path does not exist"
+  exit $E_PATHERR
+fi
+
+# TODO check if current user can change directory to $IMAGEPATH
+# TODO check if image files are readable
+# TODO check for duplicates in lists of hosts
+
+# Number of hosts to clone
+NUM_LIST=`echo $LIST | wc -w`
+
+# TODO check if mode is save then number of hosts must be equal to 1
+
+# TODO fix subnet detection (use CIDR logic - sipcalc?)
+SUBNET=`echo ${LIST} | awk 'BEGIN { FS = "." } ; { print $1 "." $2 "." $3 "." }'`
+SUBNETS=`for IP in ${LIST}
+do
+  echo $IP | awk 'BEGIN { FS = "." } ; { print $1 "." $2 "." $3 "." }'
+done | sort | uniq | wc -l
+`
+# Target IP addresses must be in the same subnet
+if [ "${SUBNETS}" -ne "1" ]
+then
+  echo "Error: target IP addresses in different subnets"
+  exit $E_LIST
+fi
+
+# Look for needed interface for target subnet
+IFACE=`ip -4 -oneline addr show | grep -F "${SUBNET}" | awk '{ print $2 }'`
+if [ -z "$IFACE" ]
+then
+  echo "Error: interface not found for target subnet"
+  exit $E_IFACE
+fi
+
+echo "Cloning started at: `date`"
+
+# Cloning partition table
+for CLONE in ${LIST}
+do
+  cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} sfdisk -uS --Linux --quiet /dev/sda
+  # Copy Dolly script to target (also works as pause before PT reread)
+  scp "/usr/local/bin/dolly-receiver" root@${CLONE}:/sbin/
+  # TODO install partprobe into live system
+  # TODO ssh@clone partprobe (to be sure then PT is rereaded)
+done
+
+# Cloning partitions
+cd ${IMAGEPATH}
+for PART in `ls sda*.img.gz | awk 'BEGIN { FS = "." } ; { print $1 }'`
+do
+  for CLONE in ${LIST}
+  do
+    # Execute Dolly script
+    ssh root@${CLONE} /usr/bin/screen -d -m /sbin/dolly-receiver /dev/${PART}
+    sleep 1
+    # TODO resize NTFS?
+    #add "ntfsresize --force --no-progress-bar $1" to cloned-restore?
+  done
+  # Wait for udpcast to settle
+  sleep 5
+  # Run sender with speed limit and frequent statistics output
+  /usr/bin/udp-sender --file "${IMAGEPATH}/${PART}.img.gz" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1
+  # Wait for data is received by slow targets
+  # This fixes "gzip: stdin error unexpected end of file"
+  sleep 5
+done
+
+# Cloning MBR and reboot
+for CLONE in ${LIST}
+do
+  cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "dd of=/dev/sda"
+  # TODO delete IP addresses from boot.php
+  ssh root@${CLONE} reboot
+done
+
+echo "Cloning finished at: `date`"
+
+exit 0
