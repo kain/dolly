@@ -125,8 +125,8 @@ do
   cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} sfdisk -uS --Linux --quiet /dev/sda
   # Copy Dolly script to target (also works as pause before PT reread)
   scp "/usr/local/bin/dolly-receiver" root@${CLONE}:/sbin/
-  # TODO install partprobe into live system
-  # TODO ssh@clone partprobe (to be sure then PT is rereaded)
+  # TODO Use ssh root@${CLONE} /sbin/blockdev --rereadpt $DEV
+  #  to reread partition table
 done
 
 # Cloning partitions
