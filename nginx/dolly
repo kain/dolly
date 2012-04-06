@@ -1,0 +1,26 @@
+# nginx dolly
+
+server {
+    listen			80 default;
+    server_name			drbl.ctd.loc;
+
+    index			index.html;
+    root			/var/www;
+
+    location ~ /\.ht		{ deny all; }
+    location = /robots.txt	{ access_log off; log_not_found off; }
+    location = /favicon.ico	{ access_log off; log_not_found off; }  
+    location ~ /\.		{ access_log off; log_not_found off; deny all; }
+    location ~ ~$		{ access_log off; log_not_found off; deny all; }
+ 
+    location /iad_admin/adminAPI/ {
+        fastcgi_pass   127.0.0.1:9000;
+        include        fastcgi_params;
+    }
+
+    location /iad_api/ {
+        fastcgi_pass   127.0.0.1:9000;
+        include        fastcgi_params;
+    }
+}
+
