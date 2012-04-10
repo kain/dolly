@@ -428,6 +428,46 @@ function classesTabHandler() {
 			};
 		};
 	});
+	
+	toolbar.down('#wolButton').on('click', function() {
+		toWake = [];
+		idsToWake = [];
+		var classIdToIdx = {};
+		editClassesGrid.getChecked().forEach(function(el) {
+			if(el.isLeaf()) {
+				idsToWake.push(el.get('computerId'));
+				var classId = el.get('classId');
+				if(classIdToIdx[classId] === undefined) {
+					toWake.push({
+						name: el.parentNode.get('name'),
+						expanded: true,
+						children: [],
+					});
+					classIdToIdx[classId] = toWake.length - 1;
+				};
+				var dataCopy = Ext.clone(el.data);
+				delete dataCopy['checked'];
+				dataCopy['status'] = 'none';
+				toWake[classIdToIdx[classId]].children.push(dataCopy);
+			};
+		});
+		if(!(idsToWake.length))
+			Ext.Msg.alert(_('Error'), _('You must select at least one computer'));
+		else
+		{
+			adminAPI({
+				data: {
+					'do': 'wakeComputers',
+					ids: idsToWake,
+				},
+				ok: function(reqdata, data) {
+					},
+				fail: function(reqdata, reason) {
+					Ext.Msg.alert(_('Error'), _('WOL canceled, reason:') + '<br/>' + reason);
+				}
+			});
+		}
+	});
 };
 
 function imagesTabHandler() {
