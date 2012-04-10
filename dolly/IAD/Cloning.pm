@@ -268,7 +268,7 @@ sub mathPercent {
 	return sprintf("%.1f", $complete / $all * 100);
 };
 
-#Звацуск скрипта клонирования\снятия образа dolly
+#Зацуск скрипта клонирования\снятия образа dolly
 sub startCloningScript {
 	my($self) = @_;
 	if(defined $self->{'cloningRun'}) {
@@ -385,6 +385,25 @@ sub handleRequest {
 		return 'Cloning not run', 'Status' => 404, 'Content-Type' => 'text/plain';
 	};
 };
+
+sub wol {
+	my ($self, @computers) = @_;
+	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
+	#Check availability for script
+	warn "Unable to locate WoL script: $wol_cmd" and return unless -e (split " ", $wol_cmd)[0]; 
+
+	foreach my $id (@computers)
+	{
+		my $cmd = $wol_cmd;
+		my ($ip, $mac) = @{$self->{'classes'}->getComputerStruct($id)}{'ip','mac'};
+		$ip =~ s/\.\d+$/\.255/;
+		$wol_cmd =~ s/%ip%/$ip/;
+		$wol_cmd =~ s/%mac%/$mac/;
+		`$wol_cmd`;
+	}
+	
+}
+
 
 package IAD::Cloning::State;
 #Класс реализует состояние процесса клонирования
