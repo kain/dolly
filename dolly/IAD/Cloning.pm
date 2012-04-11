@@ -16,6 +16,7 @@ sub new {
 		'ipToMac' => {},
 		'classes' => $DI::classes,
 		'images' => $DI::images,
+		'debugger' => $DI::debugger,
 		'maxBackLog' => 10*1024,
 		'cloningScriptState' => {},
 	}, $class;
@@ -400,8 +401,8 @@ sub wol {
 		$wol_cmd =~ s/%ip%/$ip/;
 		$wol_cmd =~ s/%mac%/$mac/;
 		`$wol_cmd`;
+		$self->{'debugger'}->print_message($self,"WakeOnLan: $ip $mac");
 	}
-	
 }
 
 
