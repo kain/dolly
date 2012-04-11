@@ -8,11 +8,12 @@ use Data::Dumper;
 sub new {
 	my($class) = @_;
 	my $self = {
-		'classes' => $DI::classes,
-		'images' => $DI::images,
-		'cloning' => $DI::cloning,
-		'ticket' => undef,
-		'notices' => []
+		'classes'  => $DI::classes,
+		'images'   => $DI::images,
+		'cloning'  => $DI::cloning,
+		'debugger' => $DI::debugger,
+		'ticket'   => undef,
+		'notices'  => []
 	};
 	return bless $self, $class;
 };
@@ -23,7 +24,7 @@ sub handleRequest {
 	my($self, $content) = @_;
 	my $data = decode_json($content);
 	
-	warn "adminAPI do: ", $data->{'do'};
+	$self->{'debugger'}->print_message($self, "Web-interface request: $data->{'do'}", Dumper(\$data));
 	
 	my $response = IAD::AdminAPI::Response->new();
 	if($data->{'do'} eq 'init') {
