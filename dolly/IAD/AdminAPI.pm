@@ -195,6 +195,10 @@ sub handleRequest {
 					$response->fail('Cloning not runned');
 				};
 			}
+			when('wakeComputers') {
+				$self->{'cloning'}->wol(@{$data->{'ids'}});
+				$response->ok;
+			}
 			default {
 				$response->fail('Unknow action(do eq "' . $data->{'do'} . '")');
 			}
