@@ -116,6 +116,14 @@ Ext.define('IAD.view.ui.editClassesTree', {
                             iconAlign: 'right',
                             iconCls: 'icon-start-cloning',
                             text: _('Start cloning')
+                        },
+                        {
+                            xtype: 'button',
+                            height: 22,
+                            itemId: 'wolButton',
+                            iconAlign: 'right',
+                            iconCls: 'icon-wol',
+                            text: _('WOL selected computers')
                         }
                     ]
                 }
