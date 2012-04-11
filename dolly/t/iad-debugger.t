@@ -11,12 +11,12 @@ my $debugger = IAD::Debugger->new('debug');
 isa_ok( $debugger, 'IAD::Debugger');
 is( $debugger->{'mode'}, 'debug', 
 	"Mode is 'debug'");
-ok( $debugger->is_on(),
+ok( $debugger->is_ON(),
 	"Debugger is ON, because 'mode' == 'debug'" );
 
 $debugger->set_OFF();
 
-isnt( $debugger->is_on(), 1, 
+isnt( $debugger->is_ON(), 1, 
 	"Debugger is OFF because 'mode' != 'debug'");
 
 stdout_like { $debugger->print_message('Simple message that will not be on STDOUT')}

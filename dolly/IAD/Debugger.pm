@@ -6,7 +6,6 @@ sub new {
 	my($class, $mode) = @_;
 	my $self = {
 		'mode'  => $mode,
-		}
 	};
 	return bless $self, $class;
 };
