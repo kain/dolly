@@ -4,6 +4,7 @@ $0 = 'IAD Daemon';
 use AnyEvent::FCGI;
 use common::sense;
 
+use IAD::Debugger;
 use IAD::Config;
 use IAD::Images;
 use IAD::Service;
@@ -12,6 +13,19 @@ use IAD::Cloning;
 use IAD::DataBase;
 use IAD::AdminAPI;
 use IAD::FCGIHandler;
+
+IAD::Service::register('debugger',    IAD::Debugger->new('no_debug'));
+
+if (@ARGV){
+	if ($ARGV[0] eq '--debug'){
+		$DI::debugger->set_ON();
+		$DI::debugger->print_message('Debug mode ON');
+	}
+	else {
+		print "$0: Wrong option '@ARGV'.\nOnly '--debug' key currently allowed.\n";
+		exit(0);
+	}
+}
 
 IAD::Service::register('db',          IAD::DataBase->new('iad.s3db'));
 IAD::Config::load();
