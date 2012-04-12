@@ -25,17 +25,22 @@ sub is_ON {
 	return $self->{'mode'} eq 'debug';
 }
 
-sub print_message{
+sub make_message{
 	my ($self, @params) = @_;
-	return unless $self->is_ON();
 	#Если первый аргумент не ссылка то все аргументы воспринимаются 
-	#как список сообщений которые заканчиваются символом новой строки
-	print @params,"\n" and return unless ref($params[0]);
+	#как список сообщений
+	return join "", @params unless ref($params[0]);
 	#Если первый аргумент - ссылка, то считается что это сообщение от класса
 	my ($class, @message) = @params;
 	$class = ref($class);
 	@message = ("REPORTING") unless @message;
-	print "<$class> ", @message, "\n";
+	return "<$class> ".(join "", @message);
+}
+
+sub print_message{
+	my ($self, @params) = @_;
+	return unless $self->is_ON();
+	print $self->make_message(@params),"\n";
 }
 
 sub print_var{
