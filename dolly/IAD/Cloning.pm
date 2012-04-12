@@ -69,7 +69,7 @@ sub getComputersState {
 sub start {
 	my($self, $mode, @params) = @_;
 	if($self->{'isCloning'}) {
-		warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Logical error, unable to start cloning, it seems already started.");
+		warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
@@ -272,7 +272,7 @@ sub mathPercent {
 sub startCloningScript {
 	my($self) = @_;
 	if(defined $self->{'cloningRun'}) {
-		die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Was attempt to run script while it was already runned.");
+		die $self->{'DEBUGGER'}->make_error("<FATAL_ERROR>", $self, "Was attempted to run script when it was already runned.");
 	}
 	else {
 		my $cloningCmd = $self->{'mode'} eq 'cloning'
@@ -306,7 +306,7 @@ sub startCloningScript {
 	        on_error => sub {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
-	            warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
+	            warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
 		);
@@ -366,7 +366,7 @@ sub handleRequest {
 						$self->startCloningScript();
 					}
 					else {
-						warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Logical error: computer reported 'ready' after script was launched.");
+						warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
 				return '', 'Status' => 200;
@@ -388,7 +388,7 @@ sub wol {
 	my ($self, @computers) = @_;
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Unable to locate WakeOnLan script in: $wol_cmd") 
+	warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Unable to locate WakeOnLan script in: $wol_cmd") 
 		and return 
 	unless -e (split " ", $wol_cmd)[0]; 
 	

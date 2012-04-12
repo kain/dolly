@@ -134,18 +134,18 @@ sub updateClass {
 sub addComputer {
 	my($self, $classId, $name, $plainMac, $ip) = @_;
 	if(!exists $self->{'classes'}->{$classId}) {
-		warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Tried add computer to class:<$classId> but it seems not exists.");
+		warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Tried add computer to class:<$classId> but it seems not exists.");
 		return undef;
 	};
 	my $mac;
 	unless($mac = $self->parseMac($plainMac)) {
-		die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Tried to add computer with wrong mac:<$plainMac>.");
+		die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to add computer with wrong mac:<$plainMac>.");
 	};
 	if($self->macExists($mac)) {
-		die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Tried to add computer with mac that already in DB:<$mac>");
+		die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to add computer with mac that already in DB:<$mac>");
 	};
 	if(defined $ip && length($ip) && !defined $self->parseIp($ip)) {
-		die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Tried to add computer with wrong IP.<$ip>");
+		die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to add computer with wrong IP.<$ip>");
 	};
 	my $computerId = $self->{'db'}->addComputer($classId, $name, $mac, $ip);
 	return undef if !defined $computerId;
