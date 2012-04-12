@@ -25,6 +25,18 @@ sub is_ON {
 	return $self->{'mode'} eq 'debug';
 }
 
+sub current_date(){
+	my ($self) = @_;
+	#Time in format 2012-04-06 03:40:44
+	my ($year, $month, $day, $hour, $min, $sec) = (localtime)[5,4,3,2,1,0];
+	return sprintf "%4d-%02d-%02d %02d:%02d:%02d ", $year+1900, $month+1, $day, $hour, $min, $sec;
+}
+
+sub make_error{
+	my ($self, $error_type, @params) = @_;
+	return $self->current_date."<$error_type> ".$self->make_message(@params);
+}
+
 sub make_message{
 	my ($self, @params) = @_;
 	#Если первый аргумент не ссылка то все аргументы воспринимаются 
@@ -34,13 +46,13 @@ sub make_message{
 	my ($class, @message) = @params;
 	$class = ref($class);
 	@message = ("REPORTING") unless @message;
-	return "<$class> ".(join "", @message);
+	return "[$class] ".(join "", @message);
 }
 
 sub print_message{
 	my ($self, @params) = @_;
 	return unless $self->is_ON();
-	print $self->make_message(@params),"\n";
+	print $self->current_date.$self->make_message(@params),"\n";
 }
 
 sub print_var{
