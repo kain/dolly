@@ -14,12 +14,12 @@ use IAD::DataBase;
 use IAD::AdminAPI;
 use IAD::FCGIHandler;
 
-IAD::Service::register('debugger',    IAD::Debugger->new('no_debug'));
+IAD::Service::register('DEBUGGER',    IAD::Debugger->new('no_debug'));
 
 if (@ARGV){
 	if ($ARGV[0] eq '--debug'){
-		$DI::debugger->set_ON();
-		$DI::debugger->print_message('Debug mode ON');
+		$DI::DEBUGGER->set_ON();
+		$DI::DEBUGGER->print_message('Debug mode ON');
 	}
 	else {
 		print "$0: Wrong option '@ARGV'.\nOnly '--debug' key currently allowed.\n";
@@ -34,8 +34,6 @@ IAD::Service::register('images',      IAD::Images->new());
 IAD::Service::register('cloning',     IAD::Cloning->new());
 IAD::Service::register('adminAPI',    IAD::AdminAPI->new());
 IAD::Service::register('FCGIHandler', IAD::FCGIHandler->new());
-
-
 
 if(AnyEvent::WIN32) {
 	#test env
