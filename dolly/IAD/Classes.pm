@@ -183,7 +183,7 @@ sub updateComputer {
 	else {
 		if(exists $opts{'mac'} && $opts{'mac'} != $computer->{'mac'}) {
 			if($self->macExists($opts{'mac'})) {
-				die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Tried to update computer with mac that already in DB:<$opts{'mac'}>");
+				die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to update computer with mac that already in DB:<$opts{'mac'}>");
 			};
 			delete $self->{'macToId'}->{$computer->{'mac'}};
 			$self->{'macToId'}->{$opts{'mac'}} = $computerId;
