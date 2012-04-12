@@ -30,7 +30,7 @@ stdout_is { $debugger->print_message('Simple message') }
 	"print_message(message)";
 
 stdout_is { $debugger->print_message('Simple message', "\nSecond message") } 
-			"Simple message \nSecond message\n", 
+			"Simple message\nSecond message\n", 
 	"print_message(message, message)";
 
 stdout_is { $debugger->print_message($t_class) } 

@@ -24,8 +24,7 @@ sub handleRequest {
 	my($self, $content) = @_;
 	my $data = decode_json($content);
 	
-	$self->{'debugger'}->print_message($self, "Web-interface request: $data->{'do'}", Dumper(\$data));
-	
+	$self->{'debugger'}->print_message($self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
 	my $response = IAD::AdminAPI::Response->new();
 	if($data->{'do'} eq 'init') {
 		$self->getNotices(); #clear Notices

@@ -29,27 +29,24 @@ sub print_message{
 	my ($self, @params) = @_;
 	return unless $self->is_ON();
 	#Если первый аргумент не ссылка то все аргументы воспринимаются 
-	#как список сообщений разделенных пробелом
-	print "@params\n" and return unless ref($params[0]);
+	#как список сообщений которые заканчиваются символом новой строки
+	print @params,"\n" and return unless ref($params[0]);
 	#Если первый аргумент - ссылка, то считается что это сообщение от класса
 	my ($class, @message) = @params;
 	$class = ref($class);
-	@message = @message ? @message : ("REPORTING");
-	print "<$class> @message\n";
+	@message = ("REPORTING") unless @message;
+	print "<$class> ", @message, "\n";
 }
 
 sub print_var{
 	my ($self, @params) = @_;
 	return unless $self->is_ON();
 	#Если первый аргумент ссылка, то считаем её ссылкой на класс
-	my $class = undef;
-	$class = shift @params if ref($params[0]);
-	#Формируем сообщение
+	my $class = shift @params if ref($params[0]);
 	my ($var, $ref) = @params;
 	if (defined $class){
 		$ref = \$class->{$var};
-		$self->print_message($class, "VAR:$var VAL:${$ref}");
-		return;
+		return $self->print_message($class, "VAR:$var VAL:${$ref}");
 	}
 	$self->print_message("VAR:$var VAL:${$ref}");
 }
