@@ -44,7 +44,6 @@ sub addComputer {
 #Получение информации о всех зарегистированных компьютеров для клонирования
 sub getMap {
 	my($self) = @_;
-
 	my $map = {};
 	foreach my $computer (values %{$self->{'macs'}}) {
 		if(!exists $map->{$computer->{'classId'}}) {
@@ -74,6 +73,7 @@ sub start {
 		return undef;
 	}
 	else {
+		$self->{'DEBUGGER'}->print_message($self, "Starting cloning process, mode:<$mode>.");
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
@@ -109,6 +109,7 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
+	$self->{'DEBUGGER'}->print_message($self, "Cloning process was stopped.");
 };
 
 #Список всех состояний процесса клонирования
@@ -327,8 +328,6 @@ sub handleRequest {
 		return 'Bad ip', 'Status' => 404, 'Content-Type' => 'text/plain';
 	};
 
-
-	
 	if($IAD::Config::auto_update_ip && defined (my $computerId = $self->{'classes'}->macExists($mac))) {
 		$self->{'classes'}->updateComputer($computerId, 'ip' => $ip);
 		$DI::adminAPI->addNotice('computerEdited', {'id' => $computerId, 'ip' => $ip});
@@ -414,7 +413,7 @@ use Storable qw/dclone/;
 #Инициализация
 sub new {
 	my($class, %conf) = @_;
-	my $self = bless {}, $class;
+	my $self = bless {'DEBUGGER' => $DI::DEBUGGER,}, $class;
 	return $self->clear()->set('notRunned');
 };
 
@@ -430,6 +429,9 @@ sub set {
 	my($self, $state, @params) = @_;
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
+
+	$self->{'DEBUGGER'}->print_message($self, "Cloning state changed to:<$state>.");
+
 	return $self
 };
 
