@@ -69,11 +69,13 @@ sub getComputersState {
 sub start {
 	my($self, $mode, @params) = @_;
 	if($self->{'isCloning'}) {
-		warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Logical error, unable to start cloning, it seems already started.");
+		warn $self->{'DEBUGGER'}->make_error('ERROR', $self, 
+			"Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
 		$self->{'DEBUGGER'}->print_message($self, "Starting cloning process, mode:<$mode>.");
+
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
@@ -83,6 +85,8 @@ sub start {
 		if($self->{'mode'} eq 'cloning') {
 			$self->{'imageId'} = $params[0];
 			$self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
+
+			$self->{'DEBUGGER'}->print_message($self, "Chosen image:<$self->{'imagePath'}>.");
 		}
 		else {
 			$self->{'cloningScriptState'}->{'partition'} = 0;
@@ -272,22 +276,19 @@ sub mathPercent {
 sub startCloningScript {
 	my($self) = @_;
 	if(defined $self->{'cloningRun'}) {
-		die $self->{'DEBUGGER'}->make_error("<FATAL_ERROR>", $self, "Was attempted to run script when it was already runned.");
+		die $self->{'DEBUGGER'}->make_error("FATAL_ERROR", $self, 
+			"Was attempted to run script when it was already runned.");
 	}
 	else {
 		my $cloningCmd = $self->{'mode'} eq 'cloning'
 			? $IAD::Config::clone_upload_image_cmd
-			: $IAD::Config::clone_make_image_cmd;
-			
+			: $IAD::Config::clone_make_image_cmd;	
 		my $ipList = join ' ' , map { $_->{'ip'} } values %{$self->{'macs'}};
-		
 		$cloningCmd =~ s/%ips?%/$ipList/g;
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
-		
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
 		$self->{'DEBUGGER'}->print_message($self, "Launching command:<<$cloningCmd>>");
-		
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -297,16 +298,22 @@ sub startCloningScript {
 	        },
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
+					
+					$self->{'DEBUGGER'}->print_message($self, "Script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
+	        		
+	        		$self->{'DEBUGGER'}->print_message($self, "Script finished not normally.");
 	        		$self->end('error', 'EOF from script');
 	        	};
 	        },
 	        on_error => sub {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
-	            warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
+
+	            warn $self->{'DEBUGGER'}->make_error('ERROR', $self, 
+	            	"Script run error. AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
 		);
@@ -318,28 +325,22 @@ sub startCloningScript {
 #Обработка запросов от целевых компьютеров для обеспечения обычной загрузки и загрузки в режиме клонирования
 sub handleRequest {
 	my($self, $action, $params) = @_;
-
 	my($mac, $ip) = ($params->{'mac'},  $params->{'ip'});
-	
 	if(!defined ($mac = $self->{'classes'}->parseMac($mac))) {
 		return 'Bad mac', 'Status' => 404, 'Content-Type' => 'text/plain';
 	}
 	elsif(!defined $self->{'classes'}->parseIp($ip)) {
 		return 'Bad ip', 'Status' => 404, 'Content-Type' => 'text/plain';
 	};
-
 	if($IAD::Config::auto_update_ip && defined (my $computerId = $self->{'classes'}->macExists($mac))) {
 		$self->{'classes'}->updateComputer($computerId, 'ip' => $ip);
 		$DI::adminAPI->addNotice('computerEdited', {'id' => $computerId, 'ip' => $ip});
 	};
-	
 	defined $IAD::Config::add_new_to_group
 		&& $self->{'classes'}->addIfNotExists($mac, $ip);
-	
 	my $computer = $self->{'macs'}->{$mac};
 
 	$self->{'DEBUGGER'}->print_message($self, "HTTP: Action:<$action> mac:<$mac> ip:<$ip>.");
-	
 	if($action eq 'getbootscript') {
 		if($self->{'isCloning'} && defined $computer) {
 			$computer->{'status'} = 'booting';
@@ -351,12 +352,10 @@ sub handleRequest {
 			return scalar slurp($IAD::Config::ipxe_normal_boot), 'Content-Type' => 'text/plain';
 		};
 	};
-	
 	if($self->{'isCloning'}) {
 		if(defined $computer) {
 			$computer->{'ip'} = $ip;
 			$self->{'ipToMac'}->{$ip} = $mac;
-
 			if($action eq 'iready') {
 				$computer->{'status'} = 'ready';
 				if(scalar (grep {  $_->{'status'} eq 'ready' } values %{$self->{'macs'}})
@@ -366,7 +365,8 @@ sub handleRequest {
 						$self->startCloningScript();
 					}
 					else {
-						warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Logical error: computer reported 'ready' after script was launched.");
+						warn $self->{'DEBUGGER'}->make_error('ERROR', $self, 
+							"Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
 				return '', 'Status' => 200;
@@ -388,7 +388,8 @@ sub wol {
 	my ($self, @computers) = @_;
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn $self->{'DEBUGGER'}->make_error('ERROR', $self, "Unable to locate WakeOnLan script in: $wol_cmd") 
+	warn $self->{'DEBUGGER'}->make_error('ERROR', $self, 
+		"Unable to locate WakeOnLan script in: $wol_cmd") 
 		and return 
 	unless -e (split " ", $wol_cmd)[0]; 
 	
