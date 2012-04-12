@@ -74,8 +74,8 @@ sub start {
 		return undef;
 	}
 	else {
-		$self->{'DEBUGGER'}->print_message($self, "Starting cloning process, mode:<$mode>.");
 
+		$self->{'DEBUGGER'}->print_message($self, "Starting cloning process, mode:<$mode>.");
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
@@ -143,10 +143,13 @@ my @clientStatus = (
 sub parseLog {
 	my($self, $log) = @_;
 	if(!exists $self->{'logFp'}) {
-		open $self->{'logFp'}, '>logs/' . time() . '.log';
+		my $logfile = '> logs/'.time().'.log';
+		open $self->{'logFp'}, $logfile 
+			or die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
 	};
-	print { $self->{'logFp'} } $log, "\n";
-	
+	print { $self->{'logFp'} } $self->{'DEBUGGER'}->current_date.$log, "\n";
+
+	$self->{'DEBUGGER'}->print_message($self, '[LOGMSG] ',$log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
@@ -288,7 +291,7 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
-		$self->{'DEBUGGER'}->print_message($self, "Launching command:<<$cloningCmd>>");
+		$self->{'DEBUGGER'}->print_message($self, "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -299,12 +302,13 @@ sub startCloningScript {
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
 					
-					$self->{'DEBUGGER'}->print_message($self, "Script finished normally.");
+					$self->{'DEBUGGER'}->print_message($self, "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
 	        		
-	        		$self->{'DEBUGGER'}->print_message($self, "Script finished not normally.");
+	        		warn $self->{'DEBUGGER'}->make_error('ERROR',$self, 
+	        			"Cloning script finished with unknown error, look in logs.");
 	        		$self->end('error', 'EOF from script');
 	        	};
 	        },
