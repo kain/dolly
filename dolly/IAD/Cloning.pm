@@ -16,7 +16,7 @@ sub new {
 		'ipToMac' => {},
 		'classes' => $DI::classes,
 		'images' => $DI::images,
-		'debugger' => $DI::debugger,
+		'DEBUGGER' => $DI::DEBUGGER,
 		'maxBackLog' => 10*1024,
 		'cloningScriptState' => {},
 	}, $class;
@@ -37,8 +37,6 @@ sub addComputer {
 			$computer->{'status'} = 'none';
 			$computer->{'ip'} = 'unknow';
 			$self->{'macs'}->{$computer->{'mac'}} = $computer;
-			#use Data::Dumper;
-			#print Dumper($computer);
 		};
 	};
 };
@@ -72,7 +70,7 @@ sub getComputersState {
 sub start {
 	my($self, $mode, @params) = @_;
 	if($self->{'isCloning'}) {
-		warn 'logic error, start when isCloning';
+		warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
@@ -273,7 +271,7 @@ sub mathPercent {
 sub startCloningScript {
 	my($self) = @_;
 	if(defined $self->{'cloningRun'}) {
-		die 'cloning script already runned';
+		die "<FATAL_ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Was attempt to run script while it was already runned.");
 	}
 	else {
 		my $cloningCmd = $self->{'mode'} eq 'cloning'
@@ -286,7 +284,8 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
-		warn "cloning script: ", $cloningCmd;
+		
+		$self->{'DEBUGGER'}->print_message($self, "Launching command:<<$cloningCmd>>");
 		
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
@@ -306,7 +305,7 @@ sub startCloningScript {
 	        on_error => sub {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
-	            warn "AE::Run::on_error fatal: $fatal, msg: $msg";
+	            warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
 		);
@@ -340,8 +339,7 @@ sub handleRequest {
 	
 	my $computer = $self->{'macs'}->{$mac};
 
-	
-	warn "http: action $action, mac $mac, ip $ip";
+	$self->{'DEBUGGER'}->print_message($self, "HTTP: Action:<$action> mac:<$mac> ip:<$ip>.");
 	
 	if($action eq 'getbootscript') {
 		if($self->{'isCloning'} && defined $computer) {
@@ -365,11 +363,11 @@ sub handleRequest {
 				if(scalar (grep {  $_->{'status'} eq 'ready' } values %{$self->{'macs'}})
 					== scalar keys %{$self->{'macs'}}) {
 					if(!defined $self->{'cloningRun'}) {
-						warn "all ready, start cloning script";
+						$self->{'DEBUGGER'}->print_message($self, "All computers ready, starting cloning script.");
 						$self->startCloningScript();
 					}
 					else {
-						warn "logic error: all computers ready, but cloning script already run";
+						warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
 				return '', 'Status' => 200;
@@ -391,8 +389,10 @@ sub wol {
 	my ($self, @computers) = @_;
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn "Unable to locate WoL script: $wol_cmd" and return unless -e (split " ", $wol_cmd)[0]; 
-
+	warn "<ERROR> ".$self->{'DEBUGGER'}->make_message($self, "Unable to locate WakeOnLan script in: $wol_cmd") 
+		and return 
+	unless -e (split " ", $wol_cmd)[0]; 
+	
 	foreach my $id (@computers)
 	{
 		my $cmd = $wol_cmd;
@@ -401,7 +401,7 @@ sub wol {
 		$wol_cmd =~ s/%ip%/$ip/;
 		$wol_cmd =~ s/%mac%/$mac/;
 		`$wol_cmd`;
-		$self->{'debugger'}->print_message($self,"WakeOnLan: $ip $mac");
+		$self->{'DEBUGGER'}->print_message($self,"WakeOnLan: $ip $mac");
 	}
 }
 
