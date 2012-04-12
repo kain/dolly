@@ -11,7 +11,7 @@ sub new {
 		'classes'  => $DI::classes,
 		'images'   => $DI::images,
 		'cloning'  => $DI::cloning,
-		'debugger' => $DI::debugger,
+		'DEBUGGER' => $DI::DEBUGGER,
 		'ticket'   => undef,
 		'notices'  => []
 	};
@@ -24,7 +24,8 @@ sub handleRequest {
 	my($self, $content) = @_;
 	my $data = decode_json($content);
 	
-	$self->{'debugger'}->print_message($self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
+	$self->{'DEBUGGER'}->print_message($self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
+
 	my $response = IAD::AdminAPI::Response->new();
 	if($data->{'do'} eq 'init') {
 		$self->getNotices(); #clear Notices
@@ -297,7 +298,7 @@ sub ok {
 #Добавление параметров ответа
 sub add {
 	my($self, %add) = @_;
-	$self->{$_} = $add{$_} foreach keys%add;
+	$self->{$_} = $add{$_} foreach keys %add;
 	return $self;
 };
 
