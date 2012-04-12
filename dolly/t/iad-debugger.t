@@ -1,8 +1,10 @@
 #!/usr/bin/perl
 #Тестовый скрипт для класса Debugger
 use common::sense;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::Output;
+use Test::Warn;
+
 require "../IAD/Debugger.pm";
 
 my $t_class  = TestClass->new('must_be_on_stdout');
@@ -61,6 +63,16 @@ stdout_like { $debugger->print_var('t_var_ref', \$t_var_ref) }
 stdout_is { $debugger->print_var($t_class, 'data') }
 			"<TestClass> VAR:data VAL:must_be_on_stdout\n", 
 	"print_var(class, var)";
+
+warning_like { warn "<ERROR> ".$debugger->make_message($t_class, "Error from test class.") } 
+			[qr/^<ERROR> <TestClass> Error from test class\..+$/],
+	"warning test while debug is ON";
+
+$debugger->set_OFF();
+
+warning_like {  warn "<ERROR> ".$debugger->make_message($t_class, "Error from test class.") }
+			[qr/^<ERROR> <TestClass> Error from test class\..+$/],
+	"warning test while debug is OFF";
 
 package TestClass;
 {
