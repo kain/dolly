@@ -160,12 +160,13 @@ sub parseLog {
 	print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
 	close $LOGFH;
 
-	$DEBUGGER->print_message([@R, qw/cloning_logs/], $self, '[LOGMSG] ', $log);
+	$DEBUGGER->print_message([qw/cloning_logs cloning all/], $self, '[LOGMSG] ', $log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
 	push(@{$self->{'cloningLog'}}, $log);
 	if($self->{'mode'} eq 'cloning') {
+		push @R, qw/cloning_udp/;
 		given($log) {
 			when(/^New connection from ((?:\d{1,3}\.){3}\d{1,3})\s+\(#\d+\) \d+/) {
 				my $ip = $1;
@@ -173,15 +174,21 @@ sub parseLog {
 					$self->{'macs'}->{$self->{'ipToMac'}->{$ip}}->{'status'} = 'connected';
 					$self->{'state'}->updateLast(scalar (grep {  $_->{'status'} eq 'connected' } values %{$self->{'macs'}}),
 												 scalar (grep {  $_->{'status'} ne 'disconnected' } values %{ $self->{'macs'} }));
+
+					$DEBUGGER->print_message([@R],$self,"[UDP] Computer:[$ip] Status:[connected].");
 				}
 				else {
-					warn '!exists ipToMac -> ', $ip;
+					warn $DEBUGGER->make_error('ERROR', $self, 
+						"[UDP] Recieved connection from unregistred computer:[$ip] something went wrong.");
 				};
 			}
 			when(/^Disconnecting #\d+ \(((?:\d{1,3}\.){3}\d{1,3})\)/) {
 				my $ip = $1;
 				if($self->{'cloningScriptState'}->{'transfering'}) {
 					$self->{'macs'}->{$self->{'ipToMac'}->{$ip}}->{'status'} = 'disconnected';
+
+					#TODO Сообщение которого никогда не будет с текущей логикой, и порядком инфы от udp-sender'a
+					$DEBUGGER->print_message([@R],$self,"[UDP] Computer:[$1] Status:[disconected].");
 				};
 			}
 			when(/^Starting transfer: \d+/) {
@@ -192,6 +199,10 @@ sub parseLog {
 				$self->{'state'}->set('transfering',
 									  $self->{'cloningScriptState'}->{'image'},
 									  $self->mathPercent(0, $self->{'cloningScriptState'}->{'imageSize'}));
+
+				$DEBUGGER->print_message([@R],$self,"[UDP] Image transfering started:",
+													"[$self->{'cloningScriptState'}->{'image'}]",
+													" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
 			}
 			when(/^UDP sender for (.*?) at /) {
 				$self->{'cloningScriptState'}->{'image'} = $1;
@@ -206,9 +217,12 @@ sub parseLog {
 				elsif ($bytes =~ s/M//) {
 					$bytes *= 1024*1024;
 				};
+
 				$self->{'cloningScriptState'}->{'bytes'} = $bytes;
 				$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'image'},
 						  					 $self->mathPercent($bytes, $self->{'cloningScriptState'}->{'imageSize'}));
+
+				$DEBUGGER->print_message([@R],$self,"[UDP] Transfered bytes:[$bytes].");
 			}
 			when(/^Transfer complete/) {
 				$self->{'cloningScriptState'}->{'transfering'} = 0;
@@ -227,8 +241,8 @@ sub parseLog {
 				foreach(values %{ $self->{'macs'} }) {
 					if($_->{'status'} ne 'disconnected') {
 						$self->{'classes'}->updateComputer($_->{'computerId'},
-														   'updateDate' => $updateDate,
-														   'imageId' => $self->{'imageId'});
+														   		'updateDate' => $updateDate,
+														   		'imageId' => $self->{'imageId'});
 						$DI::adminAPI->addNotice('computerEdited', {
 							'id' => $_->{'computerId'},
 							'updateDate' => $updateDate,
@@ -240,6 +254,7 @@ sub parseLog {
 		};
 	}
 	else {
+		pop @R and push @R, qw/cloning_ntfs/;
 		given($log) {
 			when(/^ntfsclone v\d/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'imaging';
@@ -253,14 +268,21 @@ sub parseLog {
 				given($self->{'state'}->get()) {
 					when(['scanning', 'saving']) {
 						$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'partition'}, $percent);
+
+						$DEBUGGER->print_message([@R],$self,"[NTFS] [", ucfirst ($self->{'state'}->get()),
+															"] Percent completed:[$percent%].");
 					}
 				};
 			}
 			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
 				$self->{'state'}->set('scanned', $1, $2);
+
+				$DEBUGGER->print_message([@R],$self,"[NTFS] Space in use:[$1] $2%.");
 			}
 			when(/^Saving NTFS to image \.{3}/) {
 				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
+
+				$DEBUGGER->print_message([@R],$self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -321,7 +343,7 @@ sub startCloningScript {
 	        	else {
 	        		
 	        		warn $DEBUGGER->make_error('ERROR',$self, 
-	        			"Cloning script finished with unknown error, look in logs.");
+	        			"Cloning script finished with unknown error.");
 	        		$self->end('error', 'EOF from script');
 	        	};
 	        },
@@ -456,7 +478,7 @@ sub set {
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
 
-	$DEBUGGER->print_message([@RULES], $self, "Cloning state changed to:<$state>.");
+	$DEBUGGER->print_message([@RULES], $self, "Cloning state changed to:[$state].");
 
 	return $self
 };
