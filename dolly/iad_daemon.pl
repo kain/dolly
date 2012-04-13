@@ -86,5 +86,7 @@ currently available rules:
        	- blocks messages about http-requests to clonings class
     cloning_wol				
        	- blocks messages about wakeOnLan
+    cloning_udp | cloning_ntfs
+    	- blocks info from cloning or imaging process
 __RULES__
 }
