@@ -5,10 +5,14 @@ use AnyEvent::FCGI;
 use common::sense;
 use Getopt::Long;
 
-use IAD::Debugger;
+BEGIN {
+	use IAD::Debugger;
+	use IAD::Service;
+		IAD::Service::register('DEBUGGER',    IAD::Debugger->new('no_debug'));
+}
+
 use IAD::Config;
 use IAD::Images;
-use IAD::Service;
 use IAD::Classes;
 use IAD::Cloning;
 use IAD::DataBase;
@@ -26,12 +30,9 @@ usage() and exit(0) if !$result or $help or @ARGV;
 usage() and exit(0) if $rules and !$debug;
 rules() and exit(0) if $list;
 
-IAD::Service::register('DEBUGGER',    IAD::Debugger->new('no_debug'));
-
 $DI::DEBUGGER->set_ON if $debug;
-$DI::DEBUGGER->set_rules(split ' ', $rules) if $rules;
 $DI::DEBUGGER->print_message([],'Debug mode is ON');
-$DI::DEBUGGER->print_message([],"Rules: $rules") if $rules;
+$DI::DEBUGGER->set_rules(split ' ', $rules) and $DI::DEBUGGER->print_message([],"Rules: $rules") if $rules;
 
 IAD::Service::register('db',          IAD::DataBase->new('iad.s3db'));
 IAD::Config::load();
@@ -41,7 +42,7 @@ IAD::Service::register('cloning',     IAD::Cloning->new());
 IAD::Service::register('adminAPI',    IAD::AdminAPI->new());
 IAD::Service::register('FCGIHandler', IAD::FCGIHandler->new());
 
-if(AnyEvent::WIN32) {
+#if(AnyEvent::WIN32) {
 	#test env
 	IAD::Config::set({
 		'ipxe_normal_boot' => './ipxe/normalboot',
@@ -49,11 +50,13 @@ if(AnyEvent::WIN32) {
 		'clone_make_image_cmd' => 'perl t/test-cloning.pl t/imaging.log "%ip%" "%image%"',
 		'clone_upload_image_cmd' => 'perl t/test-cloning.pl t/dolly_restore.txt "%ips%" "%image%"'
 	});
-};
+#};
 
 my $fcgi = AnyEvent::FCGI->new(port => 9000, on_request => sub { $DI::FCGIHandler->handleRequest(@_) });
 
 AnyEvent->condvar->recv;
+
+
 
 sub usage {
 	print <<__USAGE__;

@@ -4,6 +4,8 @@ use common::sense;
 use File::Slurp qw/slurp/;
 use AnyEvent::Run;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/cloning all/);
+
 #Инициализация
 sub new {
 	my($class) = @_;
@@ -16,8 +18,6 @@ sub new {
 		'ipToMac' => {},
 		'classes' => $DI::classes,
 		'images' => $DI::images,
-		DEBUGGER => $DI::DEBUGGER,
-		DEB_RULES => [qw/cloning/],
 		'maxBackLog' => 10*1024,
 		'cloningScriptState' => {},
 	}, $class;
@@ -69,16 +69,16 @@ sub getComputersState {
 #Запуск процесса клонирования\снятия образа
 sub start {
 	my($self, $mode, @params) = @_;
-	push my @R, @{$self->{DEB_RULES}};
+	push my @R, @RULES;
 
 	if($self->{'isCloning'}) {
-		warn $self->{DEBUGGER}->make_error('ERROR', $self, 
+		warn $DEBUGGER->make_error('ERROR', $self, 
 			"Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
 
-		$self->{DEBUGGER}->print_message([@R], $self, "Starting cloning process, mode:<$mode>.");
+		$DEBUGGER->print_message([@R], $self, "Starting cloning process, mode:<$mode>.");
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
@@ -89,7 +89,7 @@ sub start {
 			$self->{'imageId'} = $params[0];
 			$self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
 
-			$self->{DEBUGGER}->print_message([@R], $self, "Chosen image:<$self->{'imagePath'}>.");
+			$DEBUGGER->print_message([@R], $self, "Chosen image:[$self->{'imagePath'}].");
 		}
 		else {
 			$self->{'cloningScriptState'}->{'partition'} = 0;
@@ -104,7 +104,6 @@ sub start {
 #Заверешение процесса клонирования(плановое или по инициативе пользователя)
 sub end {
 	my($self, $state, @params) = @_;
-	push my @R, @{$self->{DEB_RULES}};
 
 	if(!$self->{'isCloning'}) {
 		return undef;
@@ -118,7 +117,7 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$self->{DEBUGGER}->print_message([@R], $self, "Cloning process was stopped.");
+	$DEBUGGER->print_message([@RULES], $self, "Cloning process was stopped.");
 };
 
 #Список всех состояний процесса клонирования
@@ -147,21 +146,21 @@ my @clientStatus = (
 #Разбор лога от скриптов клонирования\создания образа dolly
 sub parseLog {
 	my($self, $log) = @_;
-	push my @R, @{$self->{DEB_RULES}};
+	push my @R, @RULES;
 
 	my $LOGFH;
 	my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
 	if(!exists $self->{'logfile'}) {
 		$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
-		$self->{DEBUGGER}->print_message([@R], $self, "Logfile created:[$logfile]");
+		$DEBUGGER->print_message([@R], $self, "Logfile created:[$logfile]");
 	};
 	open $LOGFH, '>>', $logfile
-			or die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
+			or die $DEBUGGER->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
 
-	print { $LOGFH } ($self->{DEBUGGER}->current_date.$log, "\n");
+	print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
 	close $LOGFH;
 
-	$self->{DEBUGGER}->print_message([@R, qw/cloning_logs/], $self, '[LOGMSG] ', $log);
+	$DEBUGGER->print_message([@R, qw/cloning_logs/], $self, '[LOGMSG] ', $log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
@@ -290,10 +289,10 @@ sub mathPercent {
 #Зацуск скрипта клонирования\снятия образа dolly
 sub startCloningScript {
 	my($self) = @_;
-	push my @R, @{$self->{DEB_RULES}};
+	push my @R, @RULES;
 
 	if(defined $self->{'cloningRun'}) {
-		die $self->{DEBUGGER}->make_error("FATAL_ERROR", $self, 
+		die $DEBUGGER->make_error("FATAL_ERROR", $self, 
 			"Was attempted to run script when it was already runned.");
 	}
 	else {
@@ -305,7 +304,7 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
-		$self->{DEBUGGER}->print_message([@R], $self, "Launching command:[$cloningCmd]");
+		$DEBUGGER->print_message([@R], $self, "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -316,12 +315,12 @@ sub startCloningScript {
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
 					
-					$self->{DEBUGGER}->print_message([@R], $self, "Cloning script finished normally.");
+					$DEBUGGER->print_message([@R], $self, "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
 	        		
-	        		warn $self->{DEBUGGER}->make_error('ERROR',$self, 
+	        		warn $DEBUGGER->make_error('ERROR',$self, 
 	        			"Cloning script finished with unknown error, look in logs.");
 	        		$self->end('error', 'EOF from script');
 	        	};
@@ -330,7 +329,7 @@ sub startCloningScript {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
 
-	            warn $self->{DEBUGGER}->make_error('ERROR', $self, 
+	            warn $DEBUGGER->make_error('ERROR', $self, 
 	            	"Script run error. AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
@@ -343,7 +342,7 @@ sub startCloningScript {
 #Обработка запросов от целевых компьютеров для обеспечения обычной загрузки и загрузки в режиме клонирования
 sub handleRequest {
 	my($self, $action, $params) = @_;
-	push my @R, @{$self->{DEB_RULES}};
+	push my @R, @RULES;
 
 	my($mac, $ip) = ($params->{'mac'},  $params->{'ip'});
 	if(!defined ($mac = $self->{'classes'}->parseMac($mac))) {
@@ -360,7 +359,7 @@ sub handleRequest {
 		&& $self->{'classes'}->addIfNotExists($mac, $ip);
 	my $computer = $self->{'macs'}->{$mac};
 
-	$self->{DEBUGGER}->print_message([@R, qw/cloning_http/], $self, "HTTP request: Action:<$action> mac:<$mac> ip:<$ip>.");
+	$DEBUGGER->print_message([@R, qw/cloning_http/], $self, "HTTP request: Action:<$action> mac:<$mac> ip:<$ip>.");
 	if($action eq 'getbootscript') {
 		if($self->{'isCloning'} && defined $computer) {
 			$computer->{'status'} = 'booting';
@@ -382,11 +381,11 @@ sub handleRequest {
 					== scalar keys %{$self->{'macs'}}) {
 					if(!defined $self->{'cloningRun'}) {
 
-						$self->{DEBUGGER}->print_message([@R], $self, "All computers ready, starting cloning script.");
+						$DEBUGGER->print_message([@R], $self, "All computers ready, starting cloning script.");
 						$self->startCloningScript();
 					}
 					else {
-						warn $self->{DEBUGGER}->make_error('ERROR', $self, 
+						warn $DEBUGGER->make_error('ERROR', $self, 
 							"Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
@@ -407,11 +406,11 @@ sub handleRequest {
 
 sub wol {
 	my ($self, @computers) = @_;
-	push my @R, @{$self->{DEB_RULES}}, qw/cloning_wol/;
+	push my @R, @RULES, qw/cloning_wol/;
 
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn $self->{DEBUGGER}->make_error('ERROR', $self, 
+	warn $DEBUGGER->make_error('ERROR', $self, 
 		"Unable to locate WakeOnLan script in: $wol_cmd") 
 		and return 
 	unless -e (split " ", $wol_cmd)[0]; 
@@ -424,7 +423,7 @@ sub wol {
 		$wol_cmd =~ s/%ip%/$ip/;
 		$wol_cmd =~ s/%mac%/$mac/;
 		`$wol_cmd`;
-		$self->{DEBUGGER}->print_message([@R], $self,"WakeOnLan: $ip $mac");
+		$DEBUGGER->print_message([@R], $self,"WakeOnLan: $ip $mac");
 	}
 }
 
@@ -434,10 +433,12 @@ package IAD::Cloning::State;
 use common::sense;
 use Storable qw/dclone/;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/cloning all/);
+
 #Инициализация
 sub new {
 	my($class, %conf) = @_;
-	my $self = bless {DEBUGGER => $DI::DEBUGGER, DEB_RULES => [qw/cloning/],}, $class;
+	my $self = bless {}, $class;
 	return $self->clear()->set('notRunned');
 };
 
@@ -451,12 +452,11 @@ sub clear {
 #Добавление нового состояние
 sub set {
 	my($self, $state, @params) = @_;
-	push my @R, @{$self->{DEB_RULES}};
 
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
 
-	$self->{DEBUGGER}->print_message([@R], $self, "Cloning state changed to:<$state>.");
+	$DEBUGGER->print_message([@RULES], $self, "Cloning state changed to:<$state>.");
 
 	return $self
 };

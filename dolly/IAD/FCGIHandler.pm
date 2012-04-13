@@ -4,10 +4,12 @@ use common::sense;
 use URI;
 use Time::HiRes;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/fcgi all/);
+
 #Создание объекта
 sub new {
 	my($class) = @_;
-	my $self = {'adminAPI' => $DI::adminAPI, 'cloning' => $DI::cloning, DEBUGGER => $DI::DEBUGGER,};
+	my $self = {'adminAPI' => $DI::adminAPI, 'cloning' => $DI::cloning,};
 	return bless $self, $class;
 };
 
@@ -27,7 +29,7 @@ sub handleRequest {
 	
 	my $uriPath = $uri->path();
 
-	#$self->{DEBUGGER}->print_message($self, "HTTP request: $uriPath$content");
+	#$DEBUGGER->print_message([@RULES], $self, "HTTP request: $uriPath$content");
 
 	if($method eq 'POST' && $uriPath =~ /^\/iad_admin\/adminAPI(\/.*)$/) {
 		$request->respond( $self->{'adminAPI'}->handleRequest($content) );

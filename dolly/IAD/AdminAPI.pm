@@ -4,6 +4,8 @@ use common::sense;
 use JSON::XS;
 use Data::Dumper;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/admin all/);
+
 #Создание объекта
 sub new {
 	my($class) = @_;
@@ -11,8 +13,6 @@ sub new {
 		'classes'  => $DI::classes,
 		'images'   => $DI::images,
 		'cloning'  => $DI::cloning,
-		DEBUGGER   => $DI::DEBUGGER,
-		DEB_RULES  => [qw/admin/],
 		'ticket'   => undef,
 		'notices'  => []
 	};
@@ -22,13 +22,13 @@ sub new {
 #обработка запросов
 sub handleRequest {
 	my($self, $content) = @_;
-	push my @R, @{$self->{DEB_RULES}};
+	push my @R, @RULES;
 
 	my $data = decode_json($content);
 	
-	if ($self->{DEBUGGER}->is_ON){
+	if ($DEBUGGER->is_ON){
 		push @R, qw/admin_spam/ if $data->{'do'} eq 'getNotices' or $data->{'do'} eq 'getCloningState';
-		$self->{DEBUGGER}->print_message([@R], $self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
+		$DEBUGGER->print_message([@R], $self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
 	}
 
 	my $response = IAD::AdminAPI::Response->new();
