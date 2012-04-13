@@ -19,19 +19,20 @@ use IAD::DataBase;
 use IAD::AdminAPI;
 use IAD::FCGIHandler;
 
-my ($rules, $debug, $help, $list);
+my ($rules, $debug, $help, $list, $dev);
 
 my $result = GetOptions(	"r|rules=s"	=> \$rules,
 							"d|debug"	=> \$debug,
 							"h|help"	=> \$help,
-							"l|list"	=> \$list);
+							"l|list"	=> \$list,
+							"dev|developer"	=> \$dev,); #для тестов
 
 usage() and exit(0) if !$result or $help or @ARGV;
 usage() and exit(0) if $rules and !$debug;
 rules() and exit(0) if $list;
 
 $DI::DEBUGGER->set_ON if $debug;
-$DI::DEBUGGER->print_message([],'Debug mode is ON');
+$DI::DEBUGGER->print_message([],'Debug mode ON');
 $DI::DEBUGGER->set_rules(split ' ', $rules) and $DI::DEBUGGER->print_message([],"Rules: $rules") if $rules;
 
 IAD::Service::register('db',          IAD::DataBase->new('iad.s3db'));
@@ -42,15 +43,16 @@ IAD::Service::register('cloning',     IAD::Cloning->new());
 IAD::Service::register('adminAPI',    IAD::AdminAPI->new());
 IAD::Service::register('FCGIHandler', IAD::FCGIHandler->new());
 
-#if(AnyEvent::WIN32) {
-	#test env
+if($dev) {
+	$DI::DEBUGGER->print_message([],'Developer mode ON');
+	#Скрипты эмуляторы
 	IAD::Config::set({
 		'ipxe_normal_boot' => './ipxe/normalboot',
 		'ipxe_network_boot' => './ipxe/networkboot',
 		'clone_make_image_cmd' => 'perl t/test-cloning.pl t/imaging.log "%ip%" "%image%"',
 		'clone_upload_image_cmd' => 'perl t/test-cloning.pl t/dolly_restore.txt "%ips%" "%image%"'
 	});
-#};
+};
 
 my $fcgi = AnyEvent::FCGI->new(port => 9000, on_request => sub { $DI::FCGIHandler->handleRequest(@_) });
 
