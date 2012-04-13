@@ -6,9 +6,24 @@ sub new {
 	my($class, $mode) = @_;
 	my $self = {
 		'mode'  => $mode,
+		'rules' => [],
 	};
 	return bless $self, $class;
 };
+
+sub set_rules {
+	my ($self, @rules) = @_;
+	return push @{$self->{'rules'}}, @rules;
+}
+
+sub exist_rules {
+	my ($self, @rules) = @_;
+	foreach my $rule (@{$self->{'rules'}}){
+		foreach my $m_rule (@rules){
+			return 1 if $rule eq $m_rule;
+		}
+	}
+}
 
 sub set_ON {
 	my ($self) = @_;
@@ -50,22 +65,25 @@ sub make_message{
 }
 
 sub print_message{
-	my ($self, @params) = @_;
-	return unless $self->is_ON();
+	my ($self, $rules, @params) = @_;
+	return unless $self->is_ON() and !$self->exist_rules(@{$rules});
+	#Перед выводом добавлена проверка на то что нет соответствующего правила
+	#Допустим если при запуске демона было введено правило --debug --rules "notices"
+	#То все вызовы этого метода в параметрах которого указано такое правило, будут без вывода закрываться
 	print $self->current_date.$self->make_message(@params),"\n";
 }
 
 sub print_var{
-	my ($self, @params) = @_;
-	return unless $self->is_ON();
+	my ($self, $rules, @params) = @_;
+	return unless $self->is_ON() and !$self->exist_rules(@{$rules});;
 	#Если первый аргумент ссылка, то считаем её ссылкой на класс
 	my $class = shift @params if ref($params[0]);
 	my ($var, $ref) = @params;
 	if (defined $class){
 		$ref = \$class->{$var};
-		return $self->print_message($class, "VAR:$var VAL:${$ref}");
+		return $self->print_message($rules, $class, "VAR:$var VAL:${$ref}");
 	}
-	$self->print_message("VAR:$var VAL:${$ref}");
+	$self->print_message($rules, "VAR:$var VAL:${$ref}");
 }
 
 1;

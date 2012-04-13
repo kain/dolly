@@ -3,6 +3,7 @@
 $0 = 'IAD Daemon';
 use AnyEvent::FCGI;
 use common::sense;
+use Getopt::Long;
 
 use IAD::Debugger;
 use IAD::Config;
@@ -14,18 +15,23 @@ use IAD::DataBase;
 use IAD::AdminAPI;
 use IAD::FCGIHandler;
 
+my ($rules, $debug, $help, $list);
+
+my $result = GetOptions(	"r|rules=s"	=> \$rules,
+							"d|debug"	=> \$debug,
+							"h|help"	=> \$help,
+							"l|list"	=> \$list);
+
+usage() and exit(0) if !$result or $help or @ARGV;
+usage() and exit(0) if $rules and !$debug;
+rules() and exit(0) if $list;
+
 IAD::Service::register('DEBUGGER',    IAD::Debugger->new('no_debug'));
 
-if (@ARGV){
-	if ($ARGV[0] eq '--debug'){
-		$DI::DEBUGGER->set_ON();
-		$DI::DEBUGGER->print_message('Debug mode ON');
-	}
-	else {
-		print "$0: Wrong option '@ARGV'.\nOnly '--debug' key currently allowed.\n";
-		exit(0);
-	}
-}
+$DI::DEBUGGER->set_ON if $debug;
+$DI::DEBUGGER->set_rules(split ' ', $rules) if $rules;
+$DI::DEBUGGER->print_message([],'Debug mode is ON');
+$DI::DEBUGGER->print_message([],"Rules: $rules") if $rules;
 
 IAD::Service::register('db',          IAD::DataBase->new('iad.s3db'));
 IAD::Config::load();
@@ -48,3 +54,32 @@ if(AnyEvent::WIN32) {
 my $fcgi = AnyEvent::FCGI->new(port => 9000, on_request => sub { $DI::FCGIHandler->handleRequest(@_) });
 
 AnyEvent->condvar->recv;
+
+sub usage {
+	print <<__USAGE__;
+Usage
+	iad_daemon [-d|--debug] [-r|--rules "rules separeted by space"]
+Options
+	-d|--debug
+	    shows debug information
+	-r|--rules
+	    add rules to filter debug messages (uses only with --debug)
+	    use -l|--list to see list of rules
+__USAGE__
+}
+
+sub rules {
+	print <<__RULES__;
+currently available rules:
+    admin, cloning, classes 
+       	- blocks all messages from relevant class
+    admin_spam 				
+       	- blocks getNotice and getCloningState messages from web interface
+    cloning_logs 			
+      	- blocks messages that goes to logs
+    cloning_http			
+       	- blocks messages about http-requests to clonings class
+    cloning_wol				
+       	- blocks messages about wakeOnLan
+__RULES__
+}
