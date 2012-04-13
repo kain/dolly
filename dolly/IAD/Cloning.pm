@@ -147,16 +147,21 @@ my @clientStatus = (
 #Разбор лога от скриптов клонирования\создания образа dolly
 sub parseLog {
 	my($self, $log) = @_;
-	push my @R, @{$self->{DEB_RULES}}, qw/cloning_logs/;
+	push my @R, @{$self->{DEB_RULES}};
 
-	if(!exists $self->{'logFp'}) {
-		my $logfile = '> logs/'.time().'.log';
-		open $self->{'logFp'}, $logfile 
-			or die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
+	my $LOGFH;
+	my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
+	if(!exists $self->{'logfile'}) {
+		$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
+		$self->{DEBUGGER}->print_message([@R], $self, "Logfile created:[$logfile]");
 	};
-	print { $self->{'logFp'} } $self->{DEBUGGER}->current_date.$log, "\n";
+	open $LOGFH, '>>', $logfile
+			or die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
 
-	$self->{DEBUGGER}->print_message([@R], $self, '[LOGMSG] ',$log);
+	print { $LOGFH } ($self->{DEBUGGER}->current_date.$log, "\n");
+	close $LOGFH;
+
+	$self->{DEBUGGER}->print_message([@R, qw/cloning_logs/], $self, '[LOGMSG] ', $log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
