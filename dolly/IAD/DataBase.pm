@@ -7,7 +7,7 @@ use DBI;
 #Создание объекта
 sub new {
 	my($class, $dbfile) = @_;
-	my $self = bless {'dbfile' => $dbfile, 'DEBUGGER' => $DI::DEBUGGER,}, $class;
+	my $self = bless {'dbfile' => $dbfile, DEBUGGER => $DI::DEBUGGER,}, $class;
 	$self->init();
 	return $self;
 };
@@ -16,7 +16,7 @@ sub new {
 sub init {
 	my($self) = @_;
 	$self->{'dbh'} = DBI->connect("dbi:SQLite:dbname=" . $self->{'dbfile'}, "", "") 
-		or die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Unable to connect to SQLite DB:<$self->{'dbfile'}>.");
+		or die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Unable to connect to SQLite DB:<$self->{'dbfile'}>.");
 
 	foreach(['addClass', 'INSERT INTO `classes` (name) VALUES (?)'],
 			['addComputer', 'INSERT INTO `computers` (classId, name, mac, ip) VALUES (?,?,?,?)'],

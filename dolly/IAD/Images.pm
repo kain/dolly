@@ -8,7 +8,7 @@ sub new {
 	
 	my $self = {
 		'db' => $DI::db,
-		'DEBUGGER' => $DI::DEBUGGER,
+		DEBUGGER => $DI::DEBUGGER,
 		'images' => {},
 	};
 	$self = bless $self, $class;
@@ -51,7 +51,7 @@ sub getImagePath {
 		return $self->{'images'}->{$imageId}->{'path'};
 	}
 	else {
-		die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to get image path with wrong ID:<$imageId>.");
+		die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Tried to get image path with wrong ID:<$imageId>.");
 	};
 };
 
@@ -63,7 +63,7 @@ sub deleteImage {
 		delete $self->{'images'}->{$imageId};
 	}
 	else {
-		die $self->{'DEBUGGER'}->make_error('FATAL_ERROR', $self, "Tried to delete image with wrong ID:<$imageId>.");
+		die $self->{DEBUGGER}->make_error('FATAL_ERROR', $self, "Tried to delete image with wrong ID:<$imageId>.");
 	};
 };
 
