@@ -42,7 +42,7 @@ sub LOG {
 	$self->{LOGGER}->logger->log( level => 'notice', message => $self->current_date.$message);
 	if ($self->is_ON)
 	{
-		$self->DEBUG([qw/all logs/], shift @params, '[LOGS] ', @params);
+		$self->DEBUG([qw/all logs/], '[LOGS] ', @params);
 	}
 }
 
