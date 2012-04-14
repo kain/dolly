@@ -77,26 +77,34 @@ sub start {
 		return undef;
 	}
 	else {
-
-		$DEBUGGER->DEBUG([@R], $self, "Starting cloning process, mode:<$mode>.");
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
 		$self->{'state'}->set('waitAllReady');
 		$self->{'ipToMac'} = {};
 		$self->{'cloningScriptState'}->{'finished'} = 0;
+		
+		my $image_path;
+
 		if($self->{'mode'} eq 'cloning') {
 			$self->{'imageId'} = $params[0];
-			$self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
-
-			$DEBUGGER->DEBUG([@R], $self, "Chosen image:[$self->{'imagePath'}].");
+			$image_path	= $self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
 		}
 		else {
 			$self->{'cloningScriptState'}->{'partition'} = 0;
 			$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
-			($self->{'imageName'}, $self->{'imagePath'}) = @params;
+			(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
 		};
 		$self->{'cloningScriptLog'} = [];
+
+		$DEBUGGER->LOG($self, "Starting cloning process, mode:[$mode].",
+					  		  "image path:[$image_path]");
+		my @computers = ();
+		foreach my $mac (keys %{$self->{'macs'}}){
+				push @computers, $self->{'macs'}->{$mac}->{name};
+		}
+		$DEBUGGER->LOG($self, "Computers to clone: ",
+							 join ', ', sort @computers);
 	};
 };
 
@@ -117,7 +125,7 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$DEBUGGER->DEBUG([@RULES], $self, "Cloning process was stopped.");
+	$DEBUGGER->LOG($self, "Cloning process stopped.");
 };
 
 #Список всех состояний процесса клонирования
@@ -145,29 +153,30 @@ my @clientStatus = (
 
 #Разбор лога от скриптов клонирования\создания образа dolly
 sub parseLog {
-	my($self, $log) = @_;
+	my($self, $out) = @_;
 	push my @R, @RULES;
 
-	my $LOGFH;
-	my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
-	if(!exists $self->{'logfile'}) {
-		$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
-		$DEBUGGER->DEBUG([@R], $self, "Logfile created:[$logfile]");
-	};
-	open $LOGFH, '>>', $logfile
-			or $DEBUGGER->FATAL_ERROR($self, "Could not open log file:[$logfile]. $!");
+	#Старые логи, просто вывод от скриптов
+	# my $LOGFH;
+	# my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
+	# if(!exists $self->{'logfile'}) {
+	# 	$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
+	# 	$DEBUGGER->DEBUG([@R], $self, "Logfile created:[$logfile]");
+	# };
+	# open $LOGFH, '>>', $logfile
+	# 		or $DEBUGGER->FATAL_ERROR($self, "Could not open log file:[$logfile]. $!");
 
-	print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
-	close $LOGFH;
+	# print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
+	# close $LOGFH;
+	$DEBUGGER->DEBUG([@R, qw/cloning_script/], $self, '[SCRIPT] ', $out);
 
-	$DEBUGGER->DEBUG([qw/cloning_logs cloning all/], $self, '[LOGMSG] ', $log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
-	push(@{$self->{'cloningLog'}}, $log);
+	push(@{$self->{'cloningLog'}}, $out);
 	if($self->{'mode'} eq 'cloning') {
 		push @R, qw/cloning_udp/;
-		given($log) {
+		given($out) {
 			when(/^New connection from ((?:\d{1,3}\.){3}\d{1,3})\s+\(#\d+\) \d+/) {
 				my $ip = $1;
 				if(exists $self->{'ipToMac'}->{$ip}) {
@@ -200,9 +209,9 @@ sub parseLog {
 									  $self->{'cloningScriptState'}->{'image'},
 									  $self->mathPercent(0, $self->{'cloningScriptState'}->{'imageSize'}));
 
-				$DEBUGGER->DEBUG([@R],$self,"[UDP] Image transfering started:",
-													"[$self->{'cloningScriptState'}->{'image'}]",
-													" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
+				$DEBUGGER->LOG($self,"[UDP] Image transfering started:",
+											"[$self->{'cloningScriptState'}->{'image'}]",
+											" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
 			}
 			when(/^UDP sender for (.*?) at /) {
 				$self->{'cloningScriptState'}->{'image'} = $1;
@@ -255,13 +264,15 @@ sub parseLog {
 	}
 	else {
 		pop @R and push @R, qw/cloning_ntfs/;
-		given($log) {
+		given($out) {
 			when(/^ntfsclone v\d/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'imaging';
 				$self->{'cloningScriptState'}->{'partition'}++;
 			}
 			when(/^Scanning volume \.{3}/) {
 				$self->{'state'}->set('scanning', $self->{'cloningScriptState'}->{'partition'}, '0.00');
+
+				$DEBUGGER->LOG($self, "Partition: $self->{'cloningScriptState'}->{'partition'}");
 			}
 			when(/^\s*?([0-9.]+) percent completed/) {
 				my $percent = $1;
@@ -277,12 +288,12 @@ sub parseLog {
 			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
 				$self->{'state'}->set('scanned', $1, $2);
 
-				$DEBUGGER->DEBUG([@R],$self,"[NTFS] Space in use:[$1] $2%.");
+				$DEBUGGER->LOG( $self,"[NTFS] Space in use:[$1] $2%.");
 			}
 			when(/^Saving NTFS to image \.{3}/) {
 				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
 
-				$DEBUGGER->DEBUG([@R],$self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
+				$DEBUGGER->LOG( $self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -326,7 +337,7 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
-		$DEBUGGER->DEBUG([@R], $self, "Launching command:[$cloningCmd]");
+		$DEBUGGER->LOG( $self, "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -337,7 +348,7 @@ sub startCloningScript {
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
 					
-					$DEBUGGER->DEBUG([@R], $self, "Cloning script finished normally.");
+					$DEBUGGER->LOG( $self, "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
@@ -478,7 +489,7 @@ sub set {
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
 
-	$DEBUGGER->DEBUG([@RULES], $self, "Cloning state changed to:[$state].");
+	$DEBUGGER->LOG( $self, "Cloning state changed to:[$state].");
 
 	return $self
 };
