@@ -76,12 +76,14 @@ __USAGE__
 sub rules {
 	print <<__RULES__;
 currently available rules:
-    admin, cloning, classes 
+    admin, cloning, classes, all
        	- blocks all messages from relevant class
+    logs
+    	- don't print log messages, but they never stops writes in file
     admin_spam 				
        	- blocks getNotice and getCloningState messages from web interface
-    cloning_logs 			
-      	- blocks messages that goes to logs
+    cloning_script 			
+      	- blocks messages from cloning scripts STDOUT
     cloning_http			
        	- blocks messages about http-requests to clonings class
     cloning_wol				
