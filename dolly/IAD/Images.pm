@@ -52,7 +52,7 @@ sub getImagePath {
 		return $self->{'images'}->{$imageId}->{'path'};
 	}
 	else {
-		die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to get image path with wrong ID:<$imageId>.");
+		$DEBUGGER->FATAL_ERROR($self, "Tried to get image path with wrong ID:<$imageId>.");
 	};
 };
 
@@ -64,7 +64,7 @@ sub deleteImage {
 		delete $self->{'images'}->{$imageId};
 	}
 	else {
-		die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to delete image with wrong ID:<$imageId>.");
+		$DEBUGGER->FATAL_ERROR($self, "Tried to delete image with wrong ID:<$imageId>.");
 	};
 };
 

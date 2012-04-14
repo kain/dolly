@@ -18,7 +18,7 @@ sub new {
 sub init {
 	my($self) = @_;
 	$self->{'dbh'} = DBI->connect("dbi:SQLite:dbname=" . $self->{'dbfile'}, "", "") 
-		or die $DEBUGGER->make_error('FATAL_ERROR', $self, "Unable to connect to SQLite DB:<$self->{'dbfile'}>.");
+		or $DEBUGGER->FATAL_ERROR($self, "Unable to connect to SQLite DB:<$self->{'dbfile'}>.");
 
 	foreach(['addClass', 'INSERT INTO `classes` (name) VALUES (?)'],
 			['addComputer', 'INSERT INTO `computers` (classId, name, mac, ip) VALUES (?,?,?,?)'],

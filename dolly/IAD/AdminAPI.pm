@@ -28,7 +28,7 @@ sub handleRequest {
 	
 	if ($DEBUGGER->is_ON){
 		push @R, qw/admin_spam/ if $data->{'do'} eq 'getNotices' or $data->{'do'} eq 'getCloningState';
-		$DEBUGGER->print_message([@R], $self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
+		$DEBUGGER->DEBUG([@R], $self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
 	}
 
 	my $response = IAD::AdminAPI::Response->new();

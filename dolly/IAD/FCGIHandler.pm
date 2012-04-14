@@ -29,8 +29,6 @@ sub handleRequest {
 	
 	my $uriPath = $uri->path();
 
-	#$DEBUGGER->print_message([@RULES], $self, "HTTP request: $uriPath$content");
-
 	if($method eq 'POST' && $uriPath =~ /^\/iad_admin\/adminAPI(\/.*)$/) {
 		$request->respond( $self->{'adminAPI'}->handleRequest($content) );
 	}

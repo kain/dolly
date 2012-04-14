@@ -8,7 +8,7 @@ use Getopt::Long;
 BEGIN {
 	use IAD::Debugger;
 	use IAD::Service;
-		IAD::Service::register('DEBUGGER',    IAD::Debugger->new('no_debug'));
+		IAD::Service::register('DEBUGGER', IAD::Debugger->new('no_debug'));
 }
 
 use IAD::Config;
@@ -31,9 +31,10 @@ usage() and exit(0) if !$result or $help or @ARGV;
 usage() and exit(0) if $rules and !$debug;
 rules() and exit(0) if $list;
 
-$DI::DEBUGGER->set_ON if $debug;
-$DI::DEBUGGER->print_message([],'Debug mode ON');
-$DI::DEBUGGER->set_rules(split ' ', $rules) and $DI::DEBUGGER->print_message([],"Rules: $rules") if $rules;
+$DI::DEBUGGER->set_debug_ON if $debug;
+$DI::DEBUGGER->DEBUG([],'Debug mode ON');
+$DI::DEBUGGER->DEBUG([],'Developer mode ON') if $dev;
+$DI::DEBUGGER->set_rules(split ' ', $rules) and $DI::DEBUGGER->DEBUG([],"Rules: $rules") if $rules;
 
 IAD::Service::register('db',          IAD::DataBase->new('iad.s3db'));
 IAD::Config::load();
@@ -44,7 +45,6 @@ IAD::Service::register('adminAPI',    IAD::AdminAPI->new());
 IAD::Service::register('FCGIHandler', IAD::FCGIHandler->new());
 
 if($dev) {
-	$DI::DEBUGGER->print_message([],'Developer mode ON');
 	#Скрипты эмуляторы
 	IAD::Config::set({
 		'ipxe_normal_boot' => './ipxe/normalboot',

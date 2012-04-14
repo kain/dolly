@@ -72,13 +72,13 @@ sub start {
 	push my @R, @RULES;
 
 	if($self->{'isCloning'}) {
-		warn $DEBUGGER->make_error('ERROR', $self, 
+		$DEBUGGER->ERROR($self,
 			"Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
 
-		$DEBUGGER->print_message([@R], $self, "Starting cloning process, mode:<$mode>.");
+		$DEBUGGER->DEBUG([@R], $self, "Starting cloning process, mode:<$mode>.");
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
@@ -89,7 +89,7 @@ sub start {
 			$self->{'imageId'} = $params[0];
 			$self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
 
-			$DEBUGGER->print_message([@R], $self, "Chosen image:[$self->{'imagePath'}].");
+			$DEBUGGER->DEBUG([@R], $self, "Chosen image:[$self->{'imagePath'}].");
 		}
 		else {
 			$self->{'cloningScriptState'}->{'partition'} = 0;
@@ -117,7 +117,7 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$DEBUGGER->print_message([@RULES], $self, "Cloning process was stopped.");
+	$DEBUGGER->DEBUG([@RULES], $self, "Cloning process was stopped.");
 };
 
 #Список всех состояний процесса клонирования
@@ -152,15 +152,15 @@ sub parseLog {
 	my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
 	if(!exists $self->{'logfile'}) {
 		$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
-		$DEBUGGER->print_message([@R], $self, "Logfile created:[$logfile]");
+		$DEBUGGER->DEBUG([@R], $self, "Logfile created:[$logfile]");
 	};
 	open $LOGFH, '>>', $logfile
-			or die $DEBUGGER->make_error('FATAL_ERROR', $self, "Could not open log file:[$logfile]. $!");
+			or $DEBUGGER->FATAL_ERROR($self, "Could not open log file:[$logfile]. $!");
 
 	print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
 	close $LOGFH;
 
-	$DEBUGGER->print_message([qw/cloning_logs cloning all/], $self, '[LOGMSG] ', $log);
+	$DEBUGGER->DEBUG([qw/cloning_logs cloning all/], $self, '[LOGMSG] ', $log);
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
@@ -175,10 +175,10 @@ sub parseLog {
 					$self->{'state'}->updateLast(scalar (grep {  $_->{'status'} eq 'connected' } values %{$self->{'macs'}}),
 												 scalar (grep {  $_->{'status'} ne 'disconnected' } values %{ $self->{'macs'} }));
 
-					$DEBUGGER->print_message([@R],$self,"[UDP] Computer:[$ip] Status:[connected].");
+					$DEBUGGER->DEBUG([@R],$self,"[UDP] Computer:[$ip] Status:[connected].");
 				}
 				else {
-					warn $DEBUGGER->make_error('ERROR', $self, 
+					$DEBUGGER->ERROR($self,
 						"[UDP] Recieved connection from unregistred computer:[$ip] something went wrong.");
 				};
 			}
@@ -188,7 +188,7 @@ sub parseLog {
 					$self->{'macs'}->{$self->{'ipToMac'}->{$ip}}->{'status'} = 'disconnected';
 
 					#TODO Сообщение которого никогда не будет с текущей логикой, и порядком инфы от udp-sender'a
-					$DEBUGGER->print_message([@R],$self,"[UDP] Computer:[$1] Status:[disconected].");
+					$DEBUGGER->DEBUG([@R],$self,"[UDP] Computer:[$1] Status:[disconected].");
 				};
 			}
 			when(/^Starting transfer: \d+/) {
@@ -200,7 +200,7 @@ sub parseLog {
 									  $self->{'cloningScriptState'}->{'image'},
 									  $self->mathPercent(0, $self->{'cloningScriptState'}->{'imageSize'}));
 
-				$DEBUGGER->print_message([@R],$self,"[UDP] Image transfering started:",
+				$DEBUGGER->DEBUG([@R],$self,"[UDP] Image transfering started:",
 													"[$self->{'cloningScriptState'}->{'image'}]",
 													" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
 			}
@@ -222,7 +222,7 @@ sub parseLog {
 				$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'image'},
 						  					 $self->mathPercent($bytes, $self->{'cloningScriptState'}->{'imageSize'}));
 
-				$DEBUGGER->print_message([@R],$self,"[UDP] Transfered bytes:[$bytes].");
+				$DEBUGGER->DEBUG([@R],$self,"[UDP] Transfered bytes:[$bytes].");
 			}
 			when(/^Transfer complete/) {
 				$self->{'cloningScriptState'}->{'transfering'} = 0;
@@ -269,7 +269,7 @@ sub parseLog {
 					when(['scanning', 'saving']) {
 						$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'partition'}, $percent);
 
-						$DEBUGGER->print_message([@R],$self,"[NTFS] [", ucfirst ($self->{'state'}->get()),
+						$DEBUGGER->DEBUG([@R],$self,"[NTFS] [", ucfirst ($self->{'state'}->get()),
 															"] Percent completed:[$percent%].");
 					}
 				};
@@ -277,12 +277,12 @@ sub parseLog {
 			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
 				$self->{'state'}->set('scanned', $1, $2);
 
-				$DEBUGGER->print_message([@R],$self,"[NTFS] Space in use:[$1] $2%.");
+				$DEBUGGER->DEBUG([@R],$self,"[NTFS] Space in use:[$1] $2%.");
 			}
 			when(/^Saving NTFS to image \.{3}/) {
 				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
 
-				$DEBUGGER->print_message([@R],$self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
+				$DEBUGGER->DEBUG([@R],$self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -314,8 +314,8 @@ sub startCloningScript {
 	push my @R, @RULES;
 
 	if(defined $self->{'cloningRun'}) {
-		die $DEBUGGER->make_error("FATAL_ERROR", $self, 
-			"Was attempted to run script when it was already runned.");
+		$DEBUGGER->FATAL_ERROR($self, 
+			"Attempted to run script when it was already runned.");
 	}
 	else {
 		my $cloningCmd = $self->{'mode'} eq 'cloning'
@@ -326,7 +326,7 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
-		$DEBUGGER->print_message([@R], $self, "Launching command:[$cloningCmd]");
+		$DEBUGGER->DEBUG([@R], $self, "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -337,12 +337,12 @@ sub startCloningScript {
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
 					
-					$DEBUGGER->print_message([@R], $self, "Cloning script finished normally.");
+					$DEBUGGER->DEBUG([@R], $self, "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
 	        		
-	        		warn $DEBUGGER->make_error('ERROR',$self, 
+	        		$DEBUGGER->ERROR($self, 
 	        			"Cloning script finished with unknown error.");
 	        		$self->end('error', 'EOF from script');
 	        	};
@@ -351,7 +351,7 @@ sub startCloningScript {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
 
-	            warn $DEBUGGER->make_error('ERROR', $self, 
+	            $DEBUGGER->ERROR($self,
 	            	"Script run error. AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
@@ -381,7 +381,7 @@ sub handleRequest {
 		&& $self->{'classes'}->addIfNotExists($mac, $ip);
 	my $computer = $self->{'macs'}->{$mac};
 
-	$DEBUGGER->print_message([@R, qw/cloning_http/], $self, "HTTP request: Action:<$action> mac:<$mac> ip:<$ip>.");
+	$DEBUGGER->DEBUG([@R, qw/cloning_http/], $self, "HTTP request: Action:<$action> mac:<$mac> ip:<$ip>.");
 	if($action eq 'getbootscript') {
 		if($self->{'isCloning'} && defined $computer) {
 			$computer->{'status'} = 'booting';
@@ -403,11 +403,11 @@ sub handleRequest {
 					== scalar keys %{$self->{'macs'}}) {
 					if(!defined $self->{'cloningRun'}) {
 
-						$DEBUGGER->print_message([@R], $self, "All computers ready, starting cloning script.");
+						$DEBUGGER->DEBUG([@R], $self, "All computers ready, starting cloning script.");
 						$self->startCloningScript();
 					}
 					else {
-						warn $DEBUGGER->make_error('ERROR', $self, 
+						$DEBUGGER->ERROR($self,
 							"Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
@@ -432,7 +432,7 @@ sub wol {
 
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn $DEBUGGER->make_error('ERROR', $self, 
+	$DEBUGGER->ERROR($self,
 		"Unable to locate WakeOnLan script in: $wol_cmd") 
 		and return 
 	unless -e (split " ", $wol_cmd)[0]; 
@@ -445,7 +445,7 @@ sub wol {
 		$wol_cmd =~ s/%ip%/$ip/;
 		$wol_cmd =~ s/%mac%/$mac/;
 		`$wol_cmd`;
-		$DEBUGGER->print_message([@R], $self,"WakeOnLan: $ip $mac");
+		$DEBUGGER->DEBUG([@R], $self,"WakeOnLan: $ip $mac");
 	}
 }
 
@@ -478,7 +478,7 @@ sub set {
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
 
-	$DEBUGGER->print_message([@RULES], $self, "Cloning state changed to:[$state].");
+	$DEBUGGER->DEBUG([@RULES], $self, "Cloning state changed to:[$state].");
 
 	return $self
 };

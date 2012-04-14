@@ -136,18 +136,18 @@ sub updateClass {
 sub addComputer {
 	my($self, $classId, $name, $plainMac, $ip) = @_;
 	if(!exists $self->{'classes'}->{$classId}) {
-		warn $DEBUGGER->make_error('ERROR', $self, "Tried add computer to class:<$classId> but it seems not exists.");
+		$DEBUGGER->ERROR($self, "Tried add computer to class:<$classId> but it seems not exists.");
 		return undef;
 	};
 	my $mac;
 	unless($mac = $self->parseMac($plainMac)) {
-		die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to add computer with wrong mac:<$plainMac>.");
+		$DEBUGGER->FATAL_ERROR($self, "Tried to add computer with wrong mac:<$plainMac>.");
 	};
 	if($self->macExists($mac)) {
-		die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to add computer with mac that already in DB:<$mac>");
+		$DEBUGGER->FATAL_ERROR($self, "Tried to add computer with mac that already in DB:<$mac>");
 	};
 	if(defined $ip && length($ip) && !defined $self->parseIp($ip)) {
-		die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to add computer with wrong IP.<$ip>");
+		$DEBUGGER->FATAL_ERROR($self, "Tried to add computer with wrong IP.<$ip>");
 	};
 	my $computerId = $self->{'db'}->addComputer($classId, $name, $mac, $ip);
 	return undef if !defined $computerId;
@@ -185,7 +185,7 @@ sub updateComputer {
 	else {
 		if(exists $opts{'mac'} && $opts{'mac'} != $computer->{'mac'}) {
 			if($self->macExists($opts{'mac'})) {
-				die $DEBUGGER->make_error('FATAL_ERROR', $self, "Tried to update computer with mac that already in DB:<$opts{'mac'}>");
+				$DEBUGGER->FATAL_ERROR($self, "Tried to update computer with mac that already in DB:<$opts{'mac'}>");
 			};
 			delete $self->{'macToId'}->{$computer->{'mac'}};
 			$self->{'macToId'}->{$opts{'mac'}} = $computerId;
@@ -211,7 +211,8 @@ sub addIfNotExists {
 		return undef;
 	}
 	else {
-		$DEBUGGER->print_message([@RULES], $self, "Adding new computer automaticaly.");
+		$DEBUGGER->DEBUG([@RULES], $self, "Adding new computer automaticaly.");
+		
 		my $computerId = $self->addComputer($IAD::Config::add_new_to_group, '', $mac, $ip);
 		if(defined $computerId) {
 			$DI::adminAPI->addNotice('computerAdded', $self->getComputerStruct($computerId));
