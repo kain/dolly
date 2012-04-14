@@ -80,7 +80,6 @@ sub start {
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
-		$self->{'state'}->set('waitAllReady');
 		$self->{'ipToMac'} = {};
 		$self->{'cloningScriptState'}->{'finished'} = 0;
 		
@@ -97,14 +96,16 @@ sub start {
 		};
 		$self->{'cloningScriptLog'} = [];
 
-		$DEBUGGER->LOG($self, "Starting cloning process, mode:[$mode].",
+		$DEBUGGER->LOG( '#'x15, " Starting cloning process, mode:[$mode] ",
 					  		  "image path:[$image_path]");
 		my @computers = ();
 		foreach my $mac (keys %{$self->{'macs'}}){
 				push @computers, $self->{'macs'}->{$mac}->{name};
 		}
-		$DEBUGGER->LOG($self, "Computers to clone: ",
+		$DEBUGGER->LOG( "Computers to clone:\n",' 'x20,
 							 join ', ', sort @computers);
+
+		$self->{'state'}->set('waitAllReady');
 	};
 };
 
@@ -125,7 +126,14 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$DEBUGGER->LOG($self, "Cloning process stopped.");
+	$DEBUGGER->LOG( "Cloning process stopped. State:[$state]." );
+	if ($state eq 'error'){
+		my @state_log;
+		foreach my $log (@{$self->{'state'}->{'log'}}){
+			push @state_log, @{$log};
+		}
+		$DEBUGGER->LOG( "State log:\n\t", join "\n\t", @state_log );
+	}
 };
 
 #Список всех состояний процесса клонирования
@@ -209,7 +217,7 @@ sub parseLog {
 									  $self->{'cloningScriptState'}->{'image'},
 									  $self->mathPercent(0, $self->{'cloningScriptState'}->{'imageSize'}));
 
-				$DEBUGGER->LOG($self,"[UDP] Image transfering started:",
+				$DEBUGGER->LOG("[UDP] Image transfering started:",
 											"[$self->{'cloningScriptState'}->{'image'}]",
 											" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
 			}
@@ -272,7 +280,7 @@ sub parseLog {
 			when(/^Scanning volume \.{3}/) {
 				$self->{'state'}->set('scanning', $self->{'cloningScriptState'}->{'partition'}, '0.00');
 
-				$DEBUGGER->LOG($self, "Partition: $self->{'cloningScriptState'}->{'partition'}");
+				$DEBUGGER->LOG( "Partition: $self->{'cloningScriptState'}->{'partition'}");
 			}
 			when(/^\s*?([0-9.]+) percent completed/) {
 				my $percent = $1;
@@ -288,12 +296,12 @@ sub parseLog {
 			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
 				$self->{'state'}->set('scanned', $1, $2);
 
-				$DEBUGGER->LOG( $self,"[NTFS] Space in use:[$1] $2%.");
+				$DEBUGGER->LOG("[NTFS] Space in use:[$1] $2%.");
 			}
 			when(/^Saving NTFS to image \.{3}/) {
 				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
 
-				$DEBUGGER->LOG( $self,"[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
+				$DEBUGGER->LOG("[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -337,7 +345,7 @@ sub startCloningScript {
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
 		
-		$DEBUGGER->LOG( $self, "Launching command:[$cloningCmd]");
+		$DEBUGGER->LOG( "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -348,13 +356,13 @@ sub startCloningScript {
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
 					
-					$DEBUGGER->LOG( $self, "Cloning script finished normally.");
+					$DEBUGGER->LOG( "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
 	        		
 	        		$DEBUGGER->ERROR($self, 
-	        			"Cloning script finished with unknown error.");
+	        			"Cloning script finished with errors.");
 	        		$self->end('error', 'EOF from script');
 	        	};
 	        },
@@ -489,7 +497,7 @@ sub set {
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
 
-	$DEBUGGER->LOG( $self, "Cloning state changed to:[$state].");
+	$DEBUGGER->DEBUG([@RULES], $self, "Cloning state changed to:[$state].");
 
 	return $self
 };
