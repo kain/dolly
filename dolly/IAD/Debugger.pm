@@ -32,7 +32,7 @@ sub ERROR {
 	my ($self) = shift;
 	my $message = $self->make_error('ERROR', shift, @_);
 	$self->{LOGGER}->logger->log( level => 'error', message => $message);
-	cluck() if $self->is_ON; #Более полный вывод информации в режиме дебага	
+	cluck("\t") if $self->is_ON; #Более полный вывод информации в режиме дебага	
 }
 
 #Запись в лог
