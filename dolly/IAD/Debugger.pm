@@ -23,7 +23,7 @@ sub FATAL_ERROR {
 	my $message = $self->make_error('FATAL_ERROR', shift, @_);
 	$self->{LOGGER}->logger->log( level => 'emergency', message => $self->current_date.$message);
 	confess() if $self->is_ON; #Более полный вывод информации в режиме дебага
-	croak();
+	croak($message);
 }
 
 #Выброс ошибки с записью в логи
