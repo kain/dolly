@@ -21,8 +21,8 @@ sub new {
 sub FATAL_ERROR {
 	my ($self) = shift;
 	my $message = $self->make_error('FATAL_ERROR', shift, @_);
-	$self->{LOGGER}->logger->log( level => 'emergency', message => $self->current_date.$message);
-	confess() if $self->is_ON; #Более полный вывод информации в режиме дебага
+	$self->{LOGGER}->logger->log( level => 'emergency', message => $message);
+	confess($message) if $self->is_ON; #Более полный вывод информации в режиме дебага
 	croak($message);
 }
 
@@ -39,10 +39,11 @@ sub ERROR {
 sub LOG {
 	my ($self, @params) = @_;
 	my $message = $self->make_message(@params);
-	my $level = 'notice';
-	#Запись в логи и вывод на экран
-	$level = 'debug' if $self->is_ON;
-	$self->{LOGGER}->logger->log( level => $level, message => $self->make_message(@params));
+	$self->{LOGGER}->logger->log( level => 'notice', message => $self->current_date.$message);
+	if ($self->is_ON)
+	{
+		$self->DEBUG([qw/all logs/], shift @params, '[LOGS] ', @params);
+	}
 }
 
 #Вывод debug сообщения с фильтром по правилам
@@ -52,9 +53,10 @@ sub DEBUG {
 	#Перед выводом добавлена проверка на то что нет соответствующего правила
 	#Допустим если при запуске демона было введено правило --debug --rules "notices"
 	#То все вызовы этого метода в параметрах которого указано такое правило, будут без вывода закрываться
-	$self->{LOGGER}->logger->log( level => 'debug', message => $self->current_date.'[DEBUG] '.$self->make_message(@params));
+	$self->{LOGGER}->logger->log( level => 'debug', message => $self->current_date.$self->make_message(@params));
 }
 
+#Проверка режима, true if debug mode on
 sub is_ON {
 	my ($self) = @_;
 	return $self->{'mode'} eq 'debug';
@@ -108,6 +110,7 @@ sub make_message{
 	my ($class, @message) = @params;
 	$class = ref($class);
 	@message = ("REPORTING") unless @message;
+	$class = substr($class, 5) if index($class, 'IAD::', 0) ne -1; #Удаление IAD:: в названии классов
 	return "[$class] ".(join "", @message);
 }
 
@@ -144,7 +147,7 @@ sub logger {
 
 sub set_debug_ON{
 	my ($self) = @_;
-	return $self->logger->add($self->get_screen('debug','debug','notice'));
+	return $self->logger->add($self->get_screen('debug','debug','info'));
 }
 
 sub set_debug_OFF{
@@ -178,7 +181,7 @@ sub get_file {
 # Inner logic on log_level (use only: 0,2,3 in code please)
 #		debug -> 	   stderr if debug
 #		 info -> 	   stderr if debug
-#	   notice -> logs, stderr if debug
+#	   notice -> logs, # For rule 'logs'
 #	  warning -> logs, stderr always
 #	    error -> logs, stderr always
 #	 critical -> logs, stderr always
