@@ -11,6 +11,7 @@ sub new {
 	my $self = {
 		'mode'  => $mode,
 		'rules' => [],
+		'is_rotate' => undef,
 		 LOGGER	=> IAD::Debugger::Logger->new(),
 	};
 	return bless $self, $class;
@@ -38,6 +39,11 @@ sub ERROR {
 #Запись в лог
 sub LOG {
 	my ($self, @params) = @_;
+	#Если был получен SIGHUP, то делает re-open логфайла
+	if ($self->{is_rotate}) {
+		$self->{LOGGER}->reopen;
+		$self->{is_rotate} = undef 
+	}
 	my $message = $self->make_message(@params);
 	$self->{LOGGER}->logger->log( level => 'notice', message => $self->current_date.$message);
 	if ($self->is_ON)
@@ -88,11 +94,18 @@ sub exist_rules {
 	}
 }
 
-sub current_date(){
+sub current_date{
 	my ($self) = @_;
 	#Time in format 2012-04-06 03:40:44
 	my ($year, $month, $day, $hour, $min, $sec) = (localtime)[5,4,3,2,1,0];
 	return sprintf "%4d/%02d/%02d %02d:%02d:%02d ", $year+1900, $month+1, $day, $hour, $min, $sec;
+}
+
+sub sig_handler{
+	my ($self, $signame) = @_;
+	return if $signame ne 'HUP';
+	$self->{is_rotate} = 1;
+	$self->DEBUG([qw/all debugger/], $self, "Got signal: [SIG$signame].") if $self->is_ON;
 }
 
 sub make_error{
@@ -117,12 +130,9 @@ sub make_message{
 package IAD::Debugger::Logger;
 
 #Класс обертка над Log::Dispatch
-#Используется Log::Dispatch::File::Rolling для ротации логов
-#
-#TODO Сделать удаление старых лог файлов
-#
-use Log::Dispatch::File::Rolling;
+#Ротация логов делается извне, сигнал SIGHUP делает переинициализацию файла записи
 use Log::Dispatch::Screen;
+use Log::Dispatch::File;
 
 sub new {
 	my ($class) = shift;
@@ -143,6 +153,11 @@ sub log{
 sub logger {
 	#Чтобы фигурные скобки не писать
 	return $_[0]->{logger};
+}
+
+sub reopen {
+	my ($self) = @_;
+	return $self->logger->add($self->get_file());
 }
 
 sub set_debug_ON{
@@ -168,11 +183,10 @@ sub get_screen {
 
 sub get_file {
 	my ($self) = @_;
-	return Log::Dispatch::File::Rolling->new(
+	return Log::Dispatch::File->new(
 											name      => 'main_log',
 											min_level => 'notice',
-											filename  => 'logs/dolly-%d{yyyy-MM-dd}.log',
-											#Ротация по суткам
+											filename  => 'logs/dolly.log',
 											mode      => 'append',
 											newline   => 1,
 											);

@@ -9,6 +9,8 @@ BEGIN {
 	use IAD::Debugger;
 	use IAD::Service;
 		IAD::Service::register('DEBUGGER', IAD::Debugger->new('no_debug'));
+
+	$SIG{HUP} = sub { $DI::DEBUGGER->sig_handler(@_) };
 }
 
 use IAD::Config;
