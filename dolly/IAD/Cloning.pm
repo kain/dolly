@@ -126,7 +126,7 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$DEBUGGER->LOG( "Cloning process stopped. State:[$state]." );
+	$DEBUGGER->LOG( "Cloning process stopped. State:[", $state // 'canceled', '].' );
 	if ($state eq 'error'){
 		my @state_log;
 		foreach my $log (@{$self->{'state'}->{'log'}}){
