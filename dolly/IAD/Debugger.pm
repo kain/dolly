@@ -1,18 +1,20 @@
 package IAD::Debugger;
 #Класс вывода дебажных сообщений и записи логов
 #По сути это все обертка вокруг Log::Dispatch, с некоторыми изменениями и парой новых функций
+#Ротация логов делается извне, сигнал SIGHUP делает переинициализацию файла записи
 use common::sense;
 use Carp qw(croak carp confess cluck);
 
 #Логика логирования, вывода ошибок, и дебаг сообщений
 
 sub new {
-	my($class, $mode) = @_;
+	my($class, $mode, $log_path) = @_;
 	my $self = {
-		'mode'  => $mode,
-		'rules' => [],
+		'mode'      => $mode,
+		'log_path'  => $log_path,
+		'rules'     => [],
 		'is_rotate' => undef,
-		 LOGGER	=> IAD::Debugger::Logger->new(),
+		 LOGGER	=> IAD::Debugger::Logger->new($log_path),
 	};
 	return bless $self, $class;
 };
@@ -42,6 +44,7 @@ sub LOG {
 	#Если был получен SIGHUP, то делает re-open логфайла
 	if ($self->{is_rotate}) {
 		$self->{LOGGER}->reopen;
+		$self->DEBUG([qw/all debugger/], $self, "Catched SIGHUP earlier, re-opening file: $self->{log_path}");
 		$self->{is_rotate} = undef 
 	}
 	my $message = $self->make_message(@params);
@@ -101,6 +104,7 @@ sub current_date{
 	return sprintf "%4d/%02d/%02d %02d:%02d:%02d ", $year+1900, $month+1, $day, $hour, $min, $sec;
 }
 
+#Обработчик SIGHUP
 sub sig_handler{
 	my ($self, $signame) = @_;
 	return if $signame ne 'HUP';
@@ -130,18 +134,17 @@ sub make_message{
 package IAD::Debugger::Logger;
 
 #Класс обертка над Log::Dispatch
-#Ротация логов делается извне, сигнал SIGHUP делает переинициализацию файла записи
 use Log::Dispatch::Screen;
 use Log::Dispatch::File;
 
 sub new {
-	my ($class) = shift;
+	my ($class, $path) = @_;
 	my $logger 	= Log::Dispatch->new();
-	my $file 	= $class->get_file();
+	my $file 	= $class->get_file($path);
 	my $screen 	= $class->get_screen('screen', 'warning', 'alert');
 	$logger->add($file);
 	$logger->add($screen);
-	return bless { logger => $logger, }, $class;
+	return bless { logger => $logger, path => $path }, $class;
 }
 
 #просто проброс в Debugger
@@ -157,7 +160,7 @@ sub logger {
 
 sub reopen {
 	my ($self) = @_;
-	return $self->logger->add($self->get_file());
+	return $self->logger->add($self->get_file($self->{path}));
 }
 
 sub set_debug_ON{
@@ -182,24 +185,24 @@ sub get_screen {
 }
 
 sub get_file {
-	my ($self) = @_;
+	my ($self, $path) = @_;
 	return Log::Dispatch::File->new(
 											name      => 'main_log',
 											min_level => 'notice',
-											filename  => 'logs/dolly.log',
+											filename  => $path // q(logs/dolly.log), #стандартный путь к логам
 											mode      => 'append',
 											newline   => 1,
 											);
 }
 
 # Inner logic on log_level (use only: 0,2,3 in code please)
-#		debug -> 	   stderr if debug
-#		 info -> 	   stderr if debug
-#	   notice -> logs, # For rule 'logs'
-#	  warning -> logs, stderr always
-#	    error -> logs, stderr always
-#	 critical -> logs, stderr always
-#	    alert -> logs, stderr always
-#	emergency -> logs, # For 'die'
+# 0		debug -> 	   stderr if debug
+# 1		 info -> 	   stderr if debug
+# 2	   notice -> logs, # For rule 'logs'
+# 3	  warning -> logs, stderr always
+# 4	    error -> logs, stderr always
+# 5	 critical -> logs, stderr always
+# 6	    alert -> logs, stderr always
+# 7	emergency -> logs, # For 'die'
 
 1;

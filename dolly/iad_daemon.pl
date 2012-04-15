@@ -8,7 +8,8 @@ use Getopt::Long;
 BEGIN {
 	use IAD::Debugger;
 	use IAD::Service;
-		IAD::Service::register('DEBUGGER', IAD::Debugger->new('no_debug'));
+		IAD::Service::register('DEBUGGER', IAD::Debugger->new('no_debug',
+															  '/var/log/dolly/dolly.log')); #Log file path
 
 	$SIG{HUP} = sub { $DI::DEBUGGER->sig_handler(@_) };
 }
