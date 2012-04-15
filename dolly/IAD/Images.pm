@@ -2,6 +2,8 @@ package IAD::Images;
 #Класс реализует логику образов
 use common::sense;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/all/);
+
 #создание объекта
 sub new {
 	my($class) = @_;
@@ -50,7 +52,7 @@ sub getImagePath {
 		return $self->{'images'}->{$imageId}->{'path'};
 	}
 	else {
-		die 'imageId not exists';
+		$DEBUGGER->FATAL_ERROR($self, "Tried to get image path with wrong ID:<$imageId>.");
 	};
 };
 
@@ -62,7 +64,7 @@ sub deleteImage {
 		delete $self->{'images'}->{$imageId};
 	}
 	else {
-		die 'imageId not exists';
+		$DEBUGGER->FATAL_ERROR($self, "Tried to delete image with wrong ID:<$imageId>.");
 	};
 };
 

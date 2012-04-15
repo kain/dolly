@@ -4,27 +4,33 @@ use common::sense;
 use JSON::XS;
 use Data::Dumper;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/admin all/);
+
 #Создание объекта
 sub new {
 	my($class) = @_;
 	my $self = {
-		'classes' => $DI::classes,
-		'images' => $DI::images,
-		'cloning' => $DI::cloning,
-		'ticket' => undef,
-		'notices' => []
+		'classes'  => $DI::classes,
+		'images'   => $DI::images,
+		'cloning'  => $DI::cloning,
+		'ticket'   => undef,
+		'notices'  => []
 	};
 	return bless $self, $class;
 };
 
 #обработка запросов
 sub handleRequest {
-	
 	my($self, $content) = @_;
+	push my @R, @RULES;
+
 	my $data = decode_json($content);
 	
-	warn "adminAPI do: ", $data->{'do'};
-	
+	if ($DEBUGGER->is_ON){
+		push @R, qw/admin_spam/ if $data->{'do'} eq 'getNotices' or $data->{'do'} eq 'getCloningState';
+		$DEBUGGER->DEBUG([@R], $self, "Web-interface request: $data->{'do'} (", join (",", %$data), ")");
+	}
+
 	my $response = IAD::AdminAPI::Response->new();
 	if($data->{'do'} eq 'init') {
 		$self->getNotices(); #clear Notices
@@ -297,7 +303,7 @@ sub ok {
 #Добавление параметров ответа
 sub add {
 	my($self, %add) = @_;
-	$self->{$_} = $add{$_} foreach keys%add;
+	$self->{$_} = $add{$_} foreach keys %add;
 	return $self;
 };
 
