@@ -41,7 +41,9 @@ Perl part:
   JSON::XS
   URI
   Log::Dispatch
-  
+  Carp          #Core module from Perl 5, probably no need to install
+  Getopt::Long  #Same 
+
 Main Dolly part:
 - install packages (apt-get update && apt-get install ...):
   dnsmasq
