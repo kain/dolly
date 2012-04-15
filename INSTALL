@@ -40,7 +40,8 @@ Perl part:
   File::Slurp
   JSON::XS
   URI
-
+  Log::Dispatch
+  
 Main Dolly part:
 - install packages (apt-get update && apt-get install ...):
   dnsmasq
