@@ -72,7 +72,8 @@ Options
 	    shows debug information
 	-r|--rules
 	    add rules to filter debug messages (uses only with --debug)
-	    use -l|--list to see list of rules
+	-l|--list 
+		prints list of rules
 __USAGE__
 }
 
