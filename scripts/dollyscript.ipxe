@@ -1,0 +1,4 @@
+#!ipxe
+#
+dhcp
+chain http://drbl.ctd.loc/iad_api/getbootscript?mac=${net0/mac}&ip=${net0/ip}&

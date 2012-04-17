@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+
+set -e
+
+cd ipxe/src
+git pull
+make bin/undionly.kpxe EMBED=../../scripts/dollyscript.ipxe
+make bin/undionly.kkpxe EMBED=../../scripts/dollyscript.ipxe
+sudo cp bin/undionly.kpxe /var/lib/tftpboot/dolly_undionly.kpxe
+sudo cp bin/undionly.kkpxe /var/lib/tftpboot/dolly_undionly.kkpxe
+cd -
+
+cd /var/lib/tftpboot/
+sudo ln -s dolly_undionly.kpxe{,.0}
+sudo ln -s dolly_undionly.kkpxe{,.0}
+cd -
