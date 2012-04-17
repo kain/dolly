@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Generate server SSH-keys for live system
+#
+
+KEYGEN=`which ssh-keygen`
+RSA_KEY=live/config/chroot_local-includes/etc/ssh/ssh_host_rsa_key
+DSA_KEY=live/config/chroot_local-includes/etc/ssh/ssh_host_dsa_key
+
+echo "Generating SSH RSA host key..."
+sudo $KEYGEN -t rsa -f $RSA_KEY -C '' -N ''
+
+echo "Generating SSH2 DSA host key..."
+sudo $KEYGEN -t dsa -f $DSA_KEY -C '' -N ''
