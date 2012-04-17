@@ -4,6 +4,8 @@ use common::sense;
 use File::Slurp qw/slurp/;
 use AnyEvent::Run;
 
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/cloning all/);
+
 #Инициализация
 sub new {
 	my($class) = @_;
@@ -36,8 +38,6 @@ sub addComputer {
 			$computer->{'status'} = 'none';
 			$computer->{'ip'} = 'unknow';
 			$self->{'macs'}->{$computer->{'mac'}} = $computer;
-			#use Data::Dumper;
-			#print Dumper($computer);
 		};
 	};
 };
@@ -45,7 +45,6 @@ sub addComputer {
 #Получение информации о всех зарегистированных компьютеров для клонирования
 sub getMap {
 	my($self) = @_;
-
 	my $map = {};
 	foreach my $computer (values %{$self->{'macs'}}) {
 		if(!exists $map->{$computer->{'classId'}}) {
@@ -70,27 +69,43 @@ sub getComputersState {
 #Запуск процесса клонирования\снятия образа
 sub start {
 	my($self, $mode, @params) = @_;
+	push my @R, @RULES;
+
 	if($self->{'isCloning'}) {
-		warn 'logic error, start when isCloning';
+		$DEBUGGER->ERROR($self,
+			"Logical error, unable to start cloning, it seems already started.");
 		return undef;
 	}
 	else {
 		$self->{'isCloning'} = 1;
 		$self->{'mode'} = $mode; # cloning || imaging
 		$self->{'state'}->clear();
-		$self->{'state'}->set('waitAllReady');
 		$self->{'ipToMac'} = {};
 		$self->{'cloningScriptState'}->{'finished'} = 0;
+		
+		my $image_path;
+
 		if($self->{'mode'} eq 'cloning') {
 			$self->{'imageId'} = $params[0];
-			$self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
+			$image_path	= $self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
 		}
 		else {
 			$self->{'cloningScriptState'}->{'partition'} = 0;
 			$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
-			($self->{'imageName'}, $self->{'imagePath'}) = @params;
+			(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
 		};
 		$self->{'cloningScriptLog'} = [];
+
+		$DEBUGGER->LOG( '#'x15, " Starting cloning process, mode:[$mode] ",
+					  		  "image path:[$image_path]");
+		my @computers = ();
+		foreach my $mac (keys %{$self->{'macs'}}){
+				push @computers, $self->{'macs'}->{$mac}->{name};
+		}
+		$DEBUGGER->LOG( "Computers to clone:\n",' 'x20,
+							 join ', ', sort @computers);
+
+		$self->{'state'}->set('waitAllReady');
 	};
 };
 
@@ -98,6 +113,7 @@ sub start {
 #Заверешение процесса клонирования(плановое или по инициативе пользователя)
 sub end {
 	my($self, $state, @params) = @_;
+
 	if(!$self->{'isCloning'}) {
 		return undef;
 	};
@@ -110,6 +126,14 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
+	$DEBUGGER->LOG( "Cloning process stopped. State:[", $state // 'canceled', '].' );
+	if ($state eq 'error'){
+		my @state_log;
+		foreach my $log (@{$self->{'state'}->{'log'}}){
+			push @state_log, @{$log};
+		}
+		$DEBUGGER->LOG( "State log:\n\t", join "\n\t", @state_log );
+	}
 };
 
 #Список всех состояний процесса клонирования
@@ -137,33 +161,51 @@ my @clientStatus = (
 
 #Разбор лога от скриптов клонирования\создания образа dolly
 sub parseLog {
-	my($self, $log) = @_;
-	if(!exists $self->{'logFp'}) {
-		open $self->{'logFp'}, '>logs/' . time() . '.log';
-	};
-	print { $self->{'logFp'} } $log, "\n";
-	
+	my($self, $out) = @_;
+	push my @R, @RULES;
+
+	#Старые логи, просто вывод от скриптов
+	# my $LOGFH;
+	# my $logfile = $self->{'logfile'} if exists ($self->{'logfile'});
+	# if(!exists $self->{'logfile'}) {
+	# 	$self->{'logfile'} = $logfile = 'logs/'.time().'.log';
+	# 	$DEBUGGER->DEBUG([@R], $self, "Logfile created:[$logfile]");
+	# };
+	# open $LOGFH, '>>', $logfile
+	# 		or $DEBUGGER->FATAL_ERROR($self, "Could not open log file:[$logfile]. $!");
+
+	# print { $LOGFH } ($DEBUGGER->current_date.$log, "\n");
+	# close $LOGFH;
+	$DEBUGGER->DEBUG([@R, qw/cloning_script/], $self, '[SCRIPT] ', $out);
+
 	shift @{$self->{'cloningLog'}}
 		if scalar @{$self->{'cloningLog'}} == $self->{'maxBackLog'};
 		
-	push(@{$self->{'cloningLog'}}, $log);
+	push(@{$self->{'cloningLog'}}, $out);
 	if($self->{'mode'} eq 'cloning') {
-		given($log) {
+		push @R, qw/cloning_udp/;
+		given($out) {
 			when(/^New connection from ((?:\d{1,3}\.){3}\d{1,3})\s+\(#\d+\) \d+/) {
 				my $ip = $1;
 				if(exists $self->{'ipToMac'}->{$ip}) {
 					$self->{'macs'}->{$self->{'ipToMac'}->{$ip}}->{'status'} = 'connected';
 					$self->{'state'}->updateLast(scalar (grep {  $_->{'status'} eq 'connected' } values %{$self->{'macs'}}),
 												 scalar (grep {  $_->{'status'} ne 'disconnected' } values %{ $self->{'macs'} }));
+
+					$DEBUGGER->DEBUG([@R],$self,"[UDP] Computer:[$ip] Status:[connected].");
 				}
 				else {
-					warn '!exists ipToMac -> ', $ip;
+					$DEBUGGER->ERROR($self,
+						"[UDP] Recieved connection from unregistred computer:[$ip] something went wrong.");
 				};
 			}
 			when(/^Disconnecting #\d+ \(((?:\d{1,3}\.){3}\d{1,3})\)/) {
 				my $ip = $1;
 				if($self->{'cloningScriptState'}->{'transfering'}) {
 					$self->{'macs'}->{$self->{'ipToMac'}->{$ip}}->{'status'} = 'disconnected';
+
+					#TODO Сообщение которого никогда не будет с текущей логикой, и порядком инфы от udp-sender'a
+					$DEBUGGER->DEBUG([@R],$self,"[UDP] Computer:[$1] Status:[disconected].");
 				};
 			}
 			when(/^Starting transfer: \d+/) {
@@ -174,6 +216,10 @@ sub parseLog {
 				$self->{'state'}->set('transfering',
 									  $self->{'cloningScriptState'}->{'image'},
 									  $self->mathPercent(0, $self->{'cloningScriptState'}->{'imageSize'}));
+
+				$DEBUGGER->LOG("[UDP] Image transfering started:",
+											"[$self->{'cloningScriptState'}->{'image'}]",
+											" size:[$self->{'cloningScriptState'}->{'imageSize'}].");
 			}
 			when(/^UDP sender for (.*?) at /) {
 				$self->{'cloningScriptState'}->{'image'} = $1;
@@ -188,9 +234,12 @@ sub parseLog {
 				elsif ($bytes =~ s/M//) {
 					$bytes *= 1024*1024;
 				};
+
 				$self->{'cloningScriptState'}->{'bytes'} = $bytes;
 				$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'image'},
 						  					 $self->mathPercent($bytes, $self->{'cloningScriptState'}->{'imageSize'}));
+
+				$DEBUGGER->DEBUG([@R],$self,"[UDP] Transfered bytes:[$bytes].");
 			}
 			when(/^Transfer complete/) {
 				$self->{'cloningScriptState'}->{'transfering'} = 0;
@@ -209,8 +258,8 @@ sub parseLog {
 				foreach(values %{ $self->{'macs'} }) {
 					if($_->{'status'} ne 'disconnected') {
 						$self->{'classes'}->updateComputer($_->{'computerId'},
-														   'updateDate' => $updateDate,
-														   'imageId' => $self->{'imageId'});
+														   		'updateDate' => $updateDate,
+														   		'imageId' => $self->{'imageId'});
 						$DI::adminAPI->addNotice('computerEdited', {
 							'id' => $_->{'computerId'},
 							'updateDate' => $updateDate,
@@ -222,27 +271,37 @@ sub parseLog {
 		};
 	}
 	else {
-		given($log) {
+		pop @R and push @R, qw/cloning_ntfs/;
+		given($out) {
 			when(/^ntfsclone v\d/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'imaging';
 				$self->{'cloningScriptState'}->{'partition'}++;
 			}
 			when(/^Scanning volume \.{3}/) {
 				$self->{'state'}->set('scanning', $self->{'cloningScriptState'}->{'partition'}, '0.00');
+
+				$DEBUGGER->LOG( "Partition: $self->{'cloningScriptState'}->{'partition'}");
 			}
 			when(/^\s*?([0-9.]+) percent completed/) {
 				my $percent = $1;
 				given($self->{'state'}->get()) {
 					when(['scanning', 'saving']) {
 						$self->{'state'}->updateLast($self->{'cloningScriptState'}->{'partition'}, $percent);
+
+						$DEBUGGER->DEBUG([@R],$self,"[NTFS] [", ucfirst ($self->{'state'}->get()),
+															"] Percent completed:[$percent%].");
 					}
 				};
 			}
 			when(/^Space in use\s+: (\d+ MB) \(([0-9.]+)%\)/) {
 				$self->{'state'}->set('scanned', $1, $2);
+
+				$DEBUGGER->LOG("[NTFS] Space in use:[$1] $2%.");
 			}
 			when(/^Saving NTFS to image \.{3}/) {
 				$self->{'state'}->set('saving', $self->{'cloningScriptState'}->{'partition'}, '0.00');
+
+				$DEBUGGER->LOG("[NTFS] Saving to partition #$self->{'cloningScriptState'}->{'partition'}.");
 			}
 			when(/^Imaging finished at:/) {
 				$self->{'macs'}->{$self->{'imagingMac'}}->{'status'} = 'complete';
@@ -271,22 +330,22 @@ sub mathPercent {
 #Зацуск скрипта клонирования\снятия образа dolly
 sub startCloningScript {
 	my($self) = @_;
+	push my @R, @RULES;
+
 	if(defined $self->{'cloningRun'}) {
-		die 'cloning script already runned';
+		$DEBUGGER->FATAL_ERROR($self, 
+			"Attempted to run script when it was already runned.");
 	}
 	else {
 		my $cloningCmd = $self->{'mode'} eq 'cloning'
 			? $IAD::Config::clone_upload_image_cmd
-			: $IAD::Config::clone_make_image_cmd;
-			
+			: $IAD::Config::clone_make_image_cmd;	
 		my $ipList = join ' ' , map { $_->{'ip'} } values %{$self->{'macs'}};
-		
 		$cloningCmd =~ s/%ips?%/$ipList/g;
 		$cloningCmd =~ s/%image%/$self->{'imagePath'}/g;
-		
 		$self->parseLog('run cmd ' . $cloningCmd . ' ' . time());
-		warn "cloning script: ", $cloningCmd;
 		
+		$DEBUGGER->LOG( "Launching command:[$cloningCmd]");
 		$self->{'cloningRun'} = AnyEvent::Run->new(
 	        cmd      => $cloningCmd,
 	        on_read  => sub {
@@ -296,16 +355,23 @@ sub startCloningScript {
 	        },
 	        on_eof	 => sub {
 				if($self->{'cloningScriptState'}->{'finished'}) {
+					
+					$DEBUGGER->LOG( "Cloning script finished normally.");
 	        		$self->end('complete');
 	        	}
 	        	else {
+	        		
+	        		$DEBUGGER->ERROR($self, 
+	        			"Cloning script finished with errors.");
 	        		$self->end('error', 'EOF from script');
 	        	};
 	        },
 	        on_error => sub {
 	            my ($handle, $fatal, $msg) = @_;
 				$self->parseLog('cloning script error ' . $msg . ' ' . time());
-	            warn "AE::Run::on_error fatal: $fatal, msg: $msg";
+
+	            $DEBUGGER->ERROR($self,
+	            	"Script run error. AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
 	            $self->end('error', "Error fatal: $fatal, msg: $msg");
 	        },
 		);
@@ -317,31 +383,24 @@ sub startCloningScript {
 #Обработка запросов от целевых компьютеров для обеспечения обычной загрузки и загрузки в режиме клонирования
 sub handleRequest {
 	my($self, $action, $params) = @_;
+	push my @R, @RULES;
 
 	my($mac, $ip) = ($params->{'mac'},  $params->{'ip'});
-	
 	if(!defined ($mac = $self->{'classes'}->parseMac($mac))) {
 		return 'Bad mac', 'Status' => 404, 'Content-Type' => 'text/plain';
 	}
 	elsif(!defined $self->{'classes'}->parseIp($ip)) {
 		return 'Bad ip', 'Status' => 404, 'Content-Type' => 'text/plain';
 	};
-
-
-	
 	if($IAD::Config::auto_update_ip && defined (my $computerId = $self->{'classes'}->macExists($mac))) {
 		$self->{'classes'}->updateComputer($computerId, 'ip' => $ip);
 		$DI::adminAPI->addNotice('computerEdited', {'id' => $computerId, 'ip' => $ip});
 	};
-	
 	defined $IAD::Config::add_new_to_group
 		&& $self->{'classes'}->addIfNotExists($mac, $ip);
-	
 	my $computer = $self->{'macs'}->{$mac};
 
-	
-	warn "http: action $action, mac $mac, ip $ip";
-	
+	$DEBUGGER->DEBUG([@R, qw/cloning_http/], $self, "HTTP request: Action:<$action> mac:<$mac> ip:<$ip>.");
 	if($action eq 'getbootscript') {
 		if($self->{'isCloning'} && defined $computer) {
 			$computer->{'status'} = 'booting';
@@ -353,22 +412,22 @@ sub handleRequest {
 			return scalar slurp($IAD::Config::ipxe_normal_boot), 'Content-Type' => 'text/plain';
 		};
 	};
-	
 	if($self->{'isCloning'}) {
 		if(defined $computer) {
 			$computer->{'ip'} = $ip;
 			$self->{'ipToMac'}->{$ip} = $mac;
-
 			if($action eq 'iready') {
 				$computer->{'status'} = 'ready';
 				if(scalar (grep {  $_->{'status'} eq 'ready' } values %{$self->{'macs'}})
 					== scalar keys %{$self->{'macs'}}) {
 					if(!defined $self->{'cloningRun'}) {
-						warn "all ready, start cloning script";
+
+						$DEBUGGER->DEBUG([@R], $self, "All computers ready, starting cloning script.");
 						$self->startCloningScript();
 					}
 					else {
-						warn "logic error: all computers ready, but cloning script already run";
+						$DEBUGGER->ERROR($self,
+							"Logical error: computer reported 'ready' after script was launched.");
 					};
 				}
 				return '', 'Status' => 200;
@@ -388,10 +447,15 @@ sub handleRequest {
 
 sub wol {
 	my ($self, @computers) = @_;
+	push my @R, @RULES, qw/cloning_wol/;
+
 	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
 	#Check availability for script
-	warn "Unable to locate WoL script: $wol_cmd" and return unless -e (split " ", $wol_cmd)[0]; 
-
+	$DEBUGGER->ERROR($self,
+		"Unable to locate WakeOnLan script in: $wol_cmd") 
+		and return 
+	unless -e (split " ", $wol_cmd)[0]; 
+	
 	foreach my $id (@computers)
 	{
 		my $cmd = $wol_cmd;
@@ -400,8 +464,8 @@ sub wol {
 		$wol_cmd =~ s/%ip%/$ip/;
 		$wol_cmd =~ s/%mac%/$mac/;
 		`$wol_cmd`;
+		$DEBUGGER->DEBUG([@R], $self,"WakeOnLan: $ip $mac");
 	}
-	
 }
 
 
@@ -409,6 +473,8 @@ package IAD::Cloning::State;
 #Класс реализует состояние процесса клонирования
 use common::sense;
 use Storable qw/dclone/;
+
+our ($DEBUGGER, @RULES) = ($DI::DEBUGGER, qw/cloning all/);
 
 #Инициализация
 sub new {
@@ -427,8 +493,12 @@ sub clear {
 #Добавление нового состояние
 sub set {
 	my($self, $state, @params) = @_;
+
 	$self->{'state'} = $state;
 	push @{ $self->{'log'} }, [time(), $state, @params];
+
+	$DEBUGGER->DEBUG([@RULES], $self, "Cloning state changed to:[$state].");
+
 	return $self
 };
 
