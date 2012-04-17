@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+
+set -e
+
+echo "Disabling ssh keys deleting in live build..."
+sudo sed -i 's/^rm -f chroot\/etc\/ssh/#rm -f chroot\/etc\/ssh/' /usr/share/live/build/scripts/build/lb_chroot_hacks
+
+echo "Generating live system..."
+sudo su -c "cd live && lb clean && lb build && cp binary/live/vmlinuz* binary/live/initrd.img* binary/live/filesystem.squashfs /var/www/" root
+

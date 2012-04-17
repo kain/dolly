@@ -1,0 +1,44 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# Disable kernel logging
+dmesg -n 1
+
+# Notify Dolly server
+wget --quiet --no-proxy "http://drbl.ctd.loc/iad_api/iready?mac=$(ip a | grep ether | awk '{ print $2 }')&ip=$(ip -4 -o addr show | grep eth0 | awk '{ print $4 }' | awk -F "/" '{ print $1 }')"
+
+# Throw warning message to console
+echo "
+
+
+
+
+
+
+
+
+DOLLY
+
+
+
+
+
+Внимание, идёт процесс клонирования.
+Не выключать! Компьютер перезагрузится автоматически.
+
+
+
+
+" > /dev/tty1
+
+exit 0
