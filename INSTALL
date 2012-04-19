@@ -7,6 +7,7 @@ Main part:
 - add system user "cloned" (useradd --create-home --system --shell /bin/bash cloned)
 - generate ssh-keys for user "cloned" (su -c "ssh-keygen -t rsa" cloned) with empty passphrase
 - hostname of Dolly server must be resolvable in local network by clients
+- copy iad.s3db_sample to iad.s3db
 
 Web part:
 - install packages (apt-get update && apt-get install ...):
