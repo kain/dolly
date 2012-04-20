@@ -440,6 +440,7 @@ sub handleRequest {
 						}
 						else {
 							$DEBUGGER->DEBUG([@R], $self, "All computers ready.");
+							$self->{'state'}->set('allready');
 						}
 					}
 					else {

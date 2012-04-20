@@ -780,6 +780,9 @@ function updateCloningStateGrid(stateLog, mode) {
 				icon = 'circle-grey-16-ns.png';
 				break;
 			case 'waitAllReady':
+			case 'allready':
+				if(last) icon = 'badge-circle-check-16-ns.png';
+				break;
 			case 'runned':
 			case 'waitConnections':
 			case 'scanning':

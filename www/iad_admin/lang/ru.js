@@ -77,6 +77,7 @@ lang.ru = {
 	'cloningState.complete': 'Клонирование успешно завершенно',
 	'cloningState.canceled': 'Клонирование прервано',
 	'cloningState.error': 'Произошла ошибка: %s',
+	'cloningState.allready': 'Все компьютеры успешно загрузились',
 	
 	//additional imaging states
 	'cloningState.imaging.waitAllReady': 'Процесс создания образа запущен, ожидание готовности компьютера',
@@ -97,7 +98,7 @@ lang.ru = {
 	'computerStatus.complete': 'Клонирование завершено',
 		
 	//addtional computer imaging status
-	'computerStatus.imaging.ready': 'Готов к созданию образа',
+	'computerStatus.imaging.ready': 'Загрузился',
 	//'computerStatus.imaging.connecting': 'Wait for connection to ?',
 	//'computerStatus.imaging.connected': 'Connected to ?',
 	'computerStatus.imaging.imaging': 'Создание образа',

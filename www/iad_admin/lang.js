@@ -14,6 +14,7 @@ var lang = {
 		'cloningState.complete': 'Cloning successfully finished',
 		'cloningState.canceled': 'Cloning aborted',
 		'cloningState.error': 'An error occurred: %s',
+		'cloningState.allready': 'All computers successfully booted',
 		
 		//additional imaging states
 		'cloningState.imaging.waitAllReady': 'Creating image process started, wait computer ready state',
@@ -35,7 +36,7 @@ var lang = {
 		'computerStatus.disconnected': 'Computer disconnected',
 
 		//addtional computer imaging status
-		'computerStatus.imaging.ready': 'Ready for creating image',
+		'computerStatus.imaging.ready': 'Booted',
 		'computerStatus.imaging.connecting': 'Wait for connection to ?',
 		'computerStatus.imaging.connected': 'Connected to ?',
 		'computerStatus.imaging.imaging': 'Creating image',
