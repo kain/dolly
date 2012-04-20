@@ -72,14 +72,14 @@ lang.ru = {
 	//cloning states
 	'cloningState.notRunned': 'Клонирование не запущено',
 	'cloningState.waitAllReady': 'Процесс клонирования запущен, ожидание готовности всех компьютеров',
+	'cloningState.waitAllReadyMaint': 'Запущен режим обслуживания, ожидается загрузка всех компьютеров',
+	'cloningState.allready': 'Все компьютеры успешно загрузились',
 	'cloningState.runned': 'Запущен скрипт клонирования',
 	'cloningState.waitConnections': 'Ожидание подключения всех компьютеров [%s/%s]',
 	'cloningState.transfering': 'Передача образа %s: %s%',
 	'cloningState.complete': 'Клонирование успешно завершенно',
 	'cloningState.canceled': 'Процесс прерван',
 	'cloningState.error': 'Произошла ошибка: %s',
-	'cloningState.allready': 'Все компьютеры успешно загрузились',
-	'cloningState.waitAllReadyMaint': 'Запущен режим обслуживания, ожидается загрузка всех компьютеров',
 	
 	//additional imaging states
 	'cloningState.imaging.waitAllReady': 'Процесс создания образа запущен, ожидание готовности компьютера',

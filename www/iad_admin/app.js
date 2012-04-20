@@ -780,6 +780,9 @@ function updateCloningStateGrid(stateLog, mode) {
 				icon = 'circle-grey-16-ns.png';
 				break;
 			case 'waitAllReady':
+			case 'waitAllReadyMaint':
+				if(last) icon = 'loading.gif';
+				break;
 			case 'allready':
 				if(last) icon = 'badge-circle-check-16-ns.png';
 				break;
@@ -801,7 +804,7 @@ function updateCloningStateGrid(stateLog, mode) {
 				break;
 		}
 		stateLog[id].icon = '<img src="icons/' + icon + '"/>';
-		state = mode == 'cloning' || 'maintenance'
+		state = mode == 'cloning' || mode == 'maintenance'
 			? _('cloningState.' + stateLog[id].state)
 			: _('cloningState.imaging.' + stateLog[id].state, 'cloningState.' + stateLog[id].state);
 		if(stateLog[id].params.length) {

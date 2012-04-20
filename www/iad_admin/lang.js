@@ -8,14 +8,14 @@ var lang = {
 		//cloning states
 		'cloningState.notRunned': 'Cloning not run',
 		'cloningState.waitAllReady': 'Cloning process started, waiting all computers ready state',
+		'cloningState.allready': 'All computers successfully booted',
+		'cloningState.waitAllReadyMaint': 'Maintenance mode started, waiting all computers to boot',
 		'cloningState.runned': 'Cloning script started',
 		'cloningState.waitConnections': 'Wait connection of all computers [%s/%s]',
 		'cloningState.transfering': 'Transfering image %s: %s%',
 		'cloningState.complete': 'Cloning successfully finished',
 		'cloningState.canceled': 'Process aborted',
 		'cloningState.error': 'An error occurred: %s',
-		'cloningState.allready': 'All computers successfully booted',
-		'cloningState.waitAllReadyMaint': 'Maintenance mode started, waiting all computers to boot',
 		
 		//additional imaging states
 		'cloningState.imaging.waitAllReady': 'Creating image process started, wait computer ready state',
