@@ -33,6 +33,7 @@ Perl part:
   o conf init /proxy/
   o conf commit
 - install perl modules:
+  LWP::UserAgent		# For good proxy support in cpan
   AnyEvent
   AnyEvent::FCGI
   AnyEvent::Run
@@ -43,8 +44,7 @@ Perl part:
   JSON::XS
   URI
   Log::Dispatch
-  Carp          #Core module from Perl 5, probably no need to install
-  Getopt::Long  #Same 
+  Carp 
 
 Main Dolly part:
 - install packages (apt-get update && apt-get install ...):
