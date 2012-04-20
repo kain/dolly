@@ -202,7 +202,7 @@ sub handleRequest {
 				};
 			}
 			when('wakeComputers') {
-				$self->{'cloning'}->wol(@{$data->{'ids'}});
+				$self->{'cloning'}->startWolScript(@{$data->{'ids'}});
 				$response->ok;
 			}
 			default {
