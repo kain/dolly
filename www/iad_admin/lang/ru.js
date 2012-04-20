@@ -54,6 +54,7 @@ lang.ru = {
 	'Adding image manual': 'Добавление образа вручную',
 	'Cloning not runned': 'Клонирование не запущено',
 	'Starting cloning': 'Запуск клонирования',
+	'Maintenance' : 'Тех. обслуживание',
 	'Aborting cloning': 'Прерывание клонирования',
 	'Saving settings': 'Сохранение настроек',
 	'Restoring default settings': 'Восстановление стандартных настроек',
@@ -75,9 +76,10 @@ lang.ru = {
 	'cloningState.waitConnections': 'Ожидание подключения всех компьютеров [%s/%s]',
 	'cloningState.transfering': 'Передача образа %s: %s%',
 	'cloningState.complete': 'Клонирование успешно завершенно',
-	'cloningState.canceled': 'Клонирование прервано',
+	'cloningState.canceled': 'Процесс прерван',
 	'cloningState.error': 'Произошла ошибка: %s',
 	'cloningState.allready': 'Все компьютеры успешно загрузились',
+	'cloningState.waitAllReadyMaint': 'Запущен режим обслуживания, ожидается загрузка всех компьютеров',
 	
 	//additional imaging states
 	'cloningState.imaging.waitAllReady': 'Процесс создания образа запущен, ожидание готовности компьютера',

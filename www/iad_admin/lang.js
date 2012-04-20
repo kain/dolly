@@ -12,9 +12,10 @@ var lang = {
 		'cloningState.waitConnections': 'Wait connection of all computers [%s/%s]',
 		'cloningState.transfering': 'Transfering image %s: %s%',
 		'cloningState.complete': 'Cloning successfully finished',
-		'cloningState.canceled': 'Cloning aborted',
+		'cloningState.canceled': 'Process aborted',
 		'cloningState.error': 'An error occurred: %s',
 		'cloningState.allready': 'All computers successfully booted',
+		'cloningState.waitAllReadyMaint': 'Maintenance mode started, waiting all computers to boot',
 		
 		//additional imaging states
 		'cloningState.imaging.waitAllReady': 'Creating image process started, wait computer ready state',
