@@ -5,8 +5,8 @@ use common::sense;
 #Стандартные настройки
 sub getDefault {
 	return {
-		'ipxe_normal_boot' => './ipxe/normalboot',
-		'ipxe_network_boot' => './ipxe/networkboot',
+		'ipxe_normal_boot' => './scripts/normalboot.ipxe',
+		'ipxe_network_boot' => './scripts/networkboot.ipxe',
 		'clone_make_image_cmd' => '/usr/local/bin/dolly -m save -t "%ip%" "%image%"',
 		'clone_upload_image_cmd' => '/usr/local/bin/dolly -m restore -t "%ips%" "%image%"',
 		'auto_update_ip' => 1,

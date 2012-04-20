@@ -468,6 +468,48 @@ function classesTabHandler() {
 			});
 		}
 	});
+
+	toolbar.down('#startMaintenance').on('click', function() {
+		if(isCloning) {
+			Ext.Msg.alert(_('Error'), _('Cloning already run'));
+		}
+		else {
+			toCloning = [];
+			idsToCloning = [];
+			var classIdToIdx = {};
+			editClassesGrid.getChecked().forEach(function(el) {
+				if(el.isLeaf()) {
+					idsToCloning.push(el.get('computerId'));
+					var classId = el.get('classId');
+					if(classIdToIdx[classId] === undefined) {
+						toCloning.push({
+							name: el.parentNode.get('name'),
+							mac: '',
+							expanded: true,
+							children: [],
+						});
+						classIdToIdx[classId] = toCloning.length - 1;
+					};
+					var dataCopy = Ext.clone(el.data);
+					delete dataCopy['checked'];
+					dataCopy['status'] = 'none';
+					toCloning[classIdToIdx[classId]].children.push(dataCopy);
+				};
+			});
+			if(idsToCloning.length) {
+				adminAPI({
+					data: {'do': 'startMaintenance', ids: idsToCloning},
+					ok: function(reqdata, data) {
+						startCloning(toCloning);
+					},
+					loadMsg: _('Starting maintenance')
+				});
+			}
+			else {
+				Ext.Msg.alert(_('Error'), _('You must select at least one computer'));
+			};
+		};
+	});
 };
 
 function imagesTabHandler() {
@@ -738,6 +780,12 @@ function updateCloningStateGrid(stateLog, mode) {
 				icon = 'circle-grey-16-ns.png';
 				break;
 			case 'waitAllReady':
+			case 'waitAllReadyMaint':
+				if(last) icon = 'loading.gif';
+				break;
+			case 'allready':
+				if(last) icon = 'badge-circle-check-16-ns.png';
+				break;
 			case 'runned':
 			case 'waitConnections':
 			case 'scanning':
@@ -756,7 +804,7 @@ function updateCloningStateGrid(stateLog, mode) {
 				break;
 		}
 		stateLog[id].icon = '<img src="icons/' + icon + '"/>';
-		state = mode == 'cloning'
+		state = mode == 'cloning' || mode == 'maintenance'
 			? _('cloningState.' + stateLog[id].state)
 			: _('cloningState.imaging.' + stateLog[id].state, 'cloningState.' + stateLog[id].state);
 		if(stateLog[id].params.length) {

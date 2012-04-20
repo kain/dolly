@@ -54,6 +54,7 @@ lang.ru = {
 	'Adding image manual': 'Добавление образа вручную',
 	'Cloning not runned': 'Клонирование не запущено',
 	'Starting cloning': 'Запуск клонирования',
+	'Maintenance' : 'Тех. обслуживание',
 	'Aborting cloning': 'Прерывание клонирования',
 	'Saving settings': 'Сохранение настроек',
 	'Restoring default settings': 'Восстановление стандартных настроек',
@@ -71,11 +72,13 @@ lang.ru = {
 	//cloning states
 	'cloningState.notRunned': 'Клонирование не запущено',
 	'cloningState.waitAllReady': 'Процесс клонирования запущен, ожидание готовности всех компьютеров',
+	'cloningState.waitAllReadyMaint': 'Запущен режим обслуживания, ожидается загрузка всех компьютеров',
+	'cloningState.allready': 'Все компьютеры успешно загрузились',
 	'cloningState.runned': 'Запущен скрипт клонирования',
 	'cloningState.waitConnections': 'Ожидание подключения всех компьютеров [%s/%s]',
 	'cloningState.transfering': 'Передача образа %s: %s%',
 	'cloningState.complete': 'Клонирование успешно завершенно',
-	'cloningState.canceled': 'Клонирование прервано',
+	'cloningState.canceled': 'Процесс прерван',
 	'cloningState.error': 'Произошла ошибка: %s',
 	
 	//additional imaging states
@@ -97,7 +100,7 @@ lang.ru = {
 	'computerStatus.complete': 'Клонирование завершено',
 		
 	//addtional computer imaging status
-	'computerStatus.imaging.ready': 'Готов к созданию образа',
+	'computerStatus.imaging.ready': 'Загрузился',
 	//'computerStatus.imaging.connecting': 'Wait for connection to ?',
 	//'computerStatus.imaging.connected': 'Connected to ?',
 	'computerStatus.imaging.imaging': 'Создание образа',
