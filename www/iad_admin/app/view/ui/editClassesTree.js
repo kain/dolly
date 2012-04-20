@@ -104,6 +104,14 @@ Ext.define('IAD.view.ui.editClassesTree', {
                         {
                             xtype: 'button',
                             height: 22,
+                            itemId: 'startMaintenance',
+                            iconAlign: 'right',
+                            iconCls: 'icon-start-maintenance',
+                            text: _('Maintenance')
+                        },
+                        {
+                            xtype: 'button',
+                            height: 22,
                             itemId: 'createImage',
                             iconAlign: 'right',
                             iconCls: 'icon-create-image',
