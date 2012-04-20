@@ -116,7 +116,8 @@ sub start {
 		}
 		$self->{'cloningScriptLog'} = [];
 
-		$self->{'state'}->set('waitAllReady');
+		$self->{'state'}->set('waitAllReady') and return unless $mode eq 'maintenance';
+		$self->{'state'}->set('waitAllReadyMaint');
 	};
 };
 
@@ -138,7 +139,7 @@ sub end {
 	$self->{'isCloning'} = 0;
 
 	if ($self->{'mode'} ne 'maintenance'){
-		$DEBUGGER->LOG( "Cloning process stopped. State:[", $self->{'state'}, '].' );
+		$DEBUGGER->LOG( "Cloning process stopped. State:[", $state // 'canceled', '].' );
 		if ($state eq 'error'){
 			my @state_log;
 			foreach my $log (@{$self->{'state'}->{'log'}}){
