@@ -20,6 +20,7 @@ sub new {
 		'images' => $DI::images,
 		'maxBackLog' => 10*1024,
 		'cloningScriptState' => {},
+		'wolRun' => undef,
 	}, $class;
 	return $self;
 };
@@ -445,27 +446,41 @@ sub handleRequest {
 	};
 };
 
-sub wol {
+sub startWolScript {
 	my ($self, @computers) = @_;
 	push my @R, @RULES, qw/cloning_wol/;
 
-	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
+	my $wol_cmd = '/usr/bin/wakeonlan'; #TODO Move to Config
 	#Check availability for script
 	$DEBUGGER->ERROR($self,
 		"Unable to locate WakeOnLan script in: $wol_cmd") 
 		and return 
 	unless -e (split " ", $wol_cmd)[0]; 
 	
-	foreach my $id (@computers)
-	{
-		my $cmd = $wol_cmd;
-		my ($ip, $mac) = @{$self->{'classes'}->getComputerStruct($id)}{'ip','mac'};
-		$ip =~ s/\.\d+$/\.255/;
-		$wol_cmd =~ s/%ip%/$ip/;
-		$wol_cmd =~ s/%mac%/$mac/;
-		`$wol_cmd`;
-		$DEBUGGER->DEBUG([@R], $self,"WakeOnLan: $ip $mac");
-	}
+	$self->{'wolRun'} = AnyEvent::Run->new(
+	cmd  => sub {
+		foreach my $id (@computers){
+			my $cmd = $wol_cmd;
+			my ($ip, $mac) = @{$self->{'classes'}->getComputerStruct($id)}{'ip','mac'};
+			$ip =~ s/\.\d+$/\.255/;
+			print `$wol_cmd -i $ip $mac`;
+			select undef, undef, undef, 0.25; #Sleep 0.25 for broadcast storm def
+		}
+	},
+	on_read  => sub {
+		my $handle = shift;
+	    my $data = delete $handle->{'rbuf'};
+	    chomp($data);
+		$DEBUGGER->DEBUG([@R], "[WoL] ", $data);
+	},
+	on_eof	 => sub {
+		$DEBUGGER->DEBUG([@R], "Wake-on-lan finished.");
+	},
+	on_error => sub {
+		my ($handle, $fatal, $msg) = @_;
+			$DEBUGGER->ERROR("[WoL] Script error. AnyEvent::Run::on_error FATAL: $fatal, msg: $msg.");
+		},
+	);
 }
 
 
