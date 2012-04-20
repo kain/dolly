@@ -1,4 +1,3 @@
 - image reappears in web interface if it was deleted after deploying to some computers
 - create iad.s3db database automatically
-- create /var/log/dolly/dolly.log file automatically
 
