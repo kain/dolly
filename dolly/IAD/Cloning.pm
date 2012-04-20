@@ -465,14 +465,14 @@ sub startWolScript {
 			$ip =~ s/\.\d+$/\.255/;
 			$wol_cmd =~ s/%ip%/$ip/;
 			$wol_cmd =~ s/%mac%/$mac/;
-			`$wol_cmd`;
-			print "WakeOnLan: $ip $mac";
+			print `$wol_cmd`;
 			select undef, undef, undef, 0.25; #Sleep 0.25 for broadcast storm def
 		}
 	},
 	on_read  => sub {
 		my $handle = shift;
 	    my $data = delete $handle->{'rbuf'};
+	    chomp($data);
 		$DEBUGGER->DEBUG([@R], "[WoL] ", $data);
 	},
 	on_eof	 => sub {
