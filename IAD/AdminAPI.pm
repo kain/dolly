@@ -175,6 +175,18 @@ sub handleRequest {
 					$response->ok;
 				};
 			}
+			when('startMaintenance'){
+				if($self->{'cloning'}->{'isCloning'}) {
+					$response->fail('Cloning already run');
+				}
+				else {
+					foreach my $computerId(@{$data->{'ids'}}) {
+						$self->{'cloning'}->addComputer($self->{'classes'}->getComputerStruct($computerId));
+					};
+					$self->{'cloning'}->start('maintenance');
+					$response->ok;
+				};
+			}
 			when('getCloningState') {
 				$response->ok->add(
 					'isCloning' => $self->{'cloning'}->{'isCloning'},

@@ -50,8 +50,6 @@ IAD::Service::register('FCGIHandler', IAD::FCGIHandler->new());
 if($dev) {
 	#Скрипты эмуляторы
 	IAD::Config::set({
-		'ipxe_normal_boot' => './ipxe/normalboot',
-		'ipxe_network_boot' => './ipxe/networkboot',
 		'clone_make_image_cmd' => 'perl t/test-cloning.pl t/imaging.log "%ip%" "%image%"',
 		'clone_upload_image_cmd' => 'perl t/test-cloning.pl t/dolly_restore.txt "%ips%" "%image%"'
 	});

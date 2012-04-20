@@ -84,29 +84,40 @@ sub start {
 		$self->{'ipToMac'} = {};
 		$self->{'cloningScriptState'}->{'finished'} = 0;
 		
-		my $image_path;
+		my @computers = ();
 
-		if($self->{'mode'} eq 'cloning') {
-			$self->{'imageId'} = $params[0];
-			$image_path	= $self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
+		if($mode ne 'maintenance'){
+			my $image_path;
+
+			if($mode eq 'cloning') {
+				$self->{'imageId'} = $params[0];
+				$image_path	= $self->{'imagePath'} = $self->{'images'}->getImagePath($self->{'imageId'});
+			}
+			elsif($mode eq 'imaging') {
+				$self->{'cloningScriptState'}->{'partition'} = 0;
+				$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
+				(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
+			};
+
+			$DEBUGGER->LOG( '#'x15, " Starting cloning process, mode:[$mode] ",
+					  			"image path:[$image_path]");
+
+			foreach my $mac (keys %{$self->{'macs'}}){
+				push @computers, $self->{'macs'}->{$mac}->{name};
+			}
+			$DEBUGGER->LOG( "Computers to clone:\n",' 'x20,
+							 join ', ', sort @computers);
 		}
-		else {
-			$self->{'cloningScriptState'}->{'partition'} = 0;
-			$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
-			(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
-		};
+		else{
+			foreach my $mac (keys %{$self->{'macs'}}){
+				push @computers, $self->{'macs'}->{$mac}->{computerId};
+			}
+			$self->startWolScript(@computers);
+		}
 		$self->{'cloningScriptLog'} = [];
 
-		$DEBUGGER->LOG( '#'x15, " Starting cloning process, mode:[$mode] ",
-					  		  "image path:[$image_path]");
-		my @computers = ();
-		foreach my $mac (keys %{$self->{'macs'}}){
-				push @computers, $self->{'macs'}->{$mac}->{name};
-		}
-		$DEBUGGER->LOG( "Computers to clone:\n",' 'x20,
-							 join ', ', sort @computers);
-
-		$self->{'state'}->set('waitAllReady');
+		$self->{'state'}->set('waitAllReady') and return unless $mode eq 'maintenance';
+		$self->{'state'}->set('waitAllReadyMaint');
 	};
 };
 
@@ -127,13 +138,15 @@ sub end {
 	$self->{'state'}->set(defined $state ? $state : 'canceled', @params);
 	$self->{'isCloning'} = 0;
 
-	$DEBUGGER->LOG( "Cloning process stopped. State:[", $state // 'canceled', '].' );
-	if ($state eq 'error'){
-		my @state_log;
-		foreach my $log (@{$self->{'state'}->{'log'}}){
-			push @state_log, @{$log};
+	if ($self->{'mode'} ne 'maintenance'){
+		$DEBUGGER->LOG( "Cloning process stopped. State:[", $state // 'canceled', '].' );
+		if ($state eq 'error'){
+			my @state_log;
+			foreach my $log (@{$self->{'state'}->{'log'}}){
+				push @state_log, @{$log};
+			}
+			$DEBUGGER->LOG( "State log:\n\t", join "\n\t", @state_log );
 		}
-		$DEBUGGER->LOG( "State log:\n\t", join "\n\t", @state_log );
 	}
 };
 
@@ -422,9 +435,14 @@ sub handleRequest {
 				if(scalar (grep {  $_->{'status'} eq 'ready' } values %{$self->{'macs'}})
 					== scalar keys %{$self->{'macs'}}) {
 					if(!defined $self->{'cloningRun'}) {
-
-						$DEBUGGER->DEBUG([@R], $self, "All computers ready, starting cloning script.");
-						$self->startCloningScript();
+						if ($self->{'mode'} ne 'maintenance'){
+							$DEBUGGER->DEBUG([@R], $self, "All computers ready, starting cloning script.");
+							$self->startCloningScript();
+						}
+						else {
+							$DEBUGGER->DEBUG([@R], $self, "All computers ready.");
+							$self->{'state'}->set('allready');
+						}
 					}
 					else {
 						$DEBUGGER->ERROR($self,
