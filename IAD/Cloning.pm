@@ -467,7 +467,7 @@ sub startWolScript {
 	my ($self, @computers) = @_;
 	push my @R, @RULES, qw/cloning_wol/;
 
-	my $wol_cmd = '/usr/bin/wakeonlan -i %ip% %mac%'; #TODO Move to Config
+	my $wol_cmd = '/usr/bin/wakeonlan'; #TODO Move to Config
 	#Check availability for script
 	$DEBUGGER->ERROR($self,
 		"Unable to locate WakeOnLan script in: $wol_cmd") 
@@ -480,9 +480,7 @@ sub startWolScript {
 			my $cmd = $wol_cmd;
 			my ($ip, $mac) = @{$self->{'classes'}->getComputerStruct($id)}{'ip','mac'};
 			$ip =~ s/\.\d+$/\.255/;
-			$wol_cmd =~ s/%ip%/$ip/;
-			$wol_cmd =~ s/%mac%/$mac/;
-			print `$wol_cmd`;
+			print `$wol_cmd -i $ip $mac`;
 			select undef, undef, undef, 0.25; #Sleep 0.25 for broadcast storm def
 		}
 	},

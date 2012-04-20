@@ -12,7 +12,7 @@ KEYGEN=`which ssh-keygen`
 sudo useradd --home $CLONED_HOME --create-home --system --shell /bin/bash cloned
 
 # Generate SSH-keys
-sudo $KEYEGN -t rsa -f ${CLONED_HOME}/.ssh/id_rsa -C '' -N ''
+sudo su -c "$KEYEGN -t rsa -f ${CLONED_HOME}/.ssh/id_rsa -C '' -N ''" cloned
 
 # Add cloned public key to root live user
 cat ${CLONED_HOME}/.ssh/id_rsa.pub | sudo tee live/config/chroot_local-includes/root/.ssh/authorized_keys
