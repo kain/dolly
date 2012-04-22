@@ -7,7 +7,6 @@ var toCloning = [];
 var idsToCloning = [];
 var ticket = '';
 
-
 var taskCheckNotices = {
     run: function() {
     	var task = this;
@@ -122,7 +121,8 @@ Ext.onReady(function() {
 	IADWindow = Ext.getCmp('IADWindow');
 	AddComputerWindow = Ext.getCmp('AddComputerWindow');
 	AddImageWindow = Ext.getCmp('AddImageWindow');
-	
+	CreateImageWindow = Ext.getCmp('CreateImageWindow');
+
 	navTabs = IADWindow.getComponent('navTabs');
 	classesTab = navTabs.getComponent('classesTab');
 	editClassesGrid = classesTab.getComponent('editClassesGrid');
@@ -138,7 +138,8 @@ Ext.onReady(function() {
 	
 	AddComputerWindow.hide();
 	AddImageWindow.hide();
-	
+	CreateImageWindow.hide();
+
 	classesTabHandler();
 	imagesTabHandler();
 	cloningTabHandler();
@@ -373,10 +374,15 @@ function classesTabHandler() {
 				delete toCloning[0].children[0].checked;
 				toCloning[0].children[0].status = 'none';
 				
+				CreateImageWindow.computerId = checked[0].get('computerId');
+				CreateImageWindow.show();
+
+				/* Old window
 				AddImageWindow.setTitle(_('Create image'));
 				AddImageWindow.addImageMode = 'create';
 				AddImageWindow.computerId = checked[0].get('computerId');
 				AddImageWindow.show();
+				*/
 			};
 		};
 
@@ -515,10 +521,9 @@ function classesTabHandler() {
 function imagesTabHandler() {
 	var toolbar = imagesTab.down('#toolbar');
 	var askbar = imagesTab.down('#askbar');
-	
 
 	imagesTab.down('#addImageManual').on('click', function() {
-		AddImageWindow.setTitle(_('Add image manual'));
+		AddImageWindow.setTitle(_('Add image manually'));
 		AddImageWindow.addImageMode = 'manual';
 		AddImageWindow.show();
 	});
@@ -528,27 +533,25 @@ function imagesTabHandler() {
 	});
 	
 	AddImageWindow.down('#add').on('click', function() {
-		var name = AddImageWindow.down('#name').getValue();
+		var description = AddImageWindow.down('#description').getValue();
 		var path = AddImageWindow.down('#path').getValue();
-		if(!name.length) {
-			Ext.Msg.alert(_('Error'), _('You must enter image name'));
-		}
-		else if(!path.length) {
+		if(!path.length) {
 			Ext.Msg.alert(_('Error'), _('You must enter image path'));
 		}
 		else if(AddImageWindow.addImageMode == 'manual') {
 			adminAPI({
-				data: {'do': 'addImageManual', name: name, path: path},
+				data: {'do': 'addImageManual', description: description, path: path},
 				ok: function(reqdata, data) {
 					imagesGrid.getStore().add({imageId: data.imageId,
-											   name: name,
+											   name: description,
 											   path: path,
 											   addDate: data.addDate});
 					AddImageWindow.hide();
 				},
-				loadMsg: _('Adding image manual')
+				loadMsg: _('Adding image manually')
 			});
 		}
+		/* Create image button handler (now in new window)
 		else if(AddImageWindow.addImageMode == 'create') {
 			adminAPI({
 				data: {'do': 'createImage', name: name, path: path, id: AddImageWindow.computerId},
@@ -559,8 +562,34 @@ function imagesTabHandler() {
 				loadMsg: _('Starting creating image')
 			});
 		};
+		*/
 	});
 	
+	CreateImageWindow.down('#cancel').on('click', function() {
+		CreateImageWindow.hide();
+	});
+
+	CreateImageWindow.down('#add').on('click', function() {
+		var name = CreateImageWindow.down('#name').getValue();
+		var description = CreateImageWindow.down('#description').getValue();
+		/* Check for empty fields (not necessary now...)
+		if(!name.length) {
+			Ext.Msg.alert(_('Error'), _('You must enter image name'));
+		}
+		else if(!description.length) {
+			Ext.Msg.alert(_('Error'), _('You must enter image description'));
+		}
+		else { */
+			adminAPI({
+				data: {'do': 'createImage', name: name, description: description, id: CreateImageWindow.computerId},
+				ok: function(reqdata, data) {
+					CreateImageWindow.hide();
+					startCloning(toCloning);
+				},
+				loadMsg: _('Starting creating image')
+			});
+		//}
+	});
 	
 	imagesGrid.down('#deleteRow').items[0].handler = function(grid, rowIndex, colIndex) {
         var record = grid.getStore().getAt(rowIndex);
