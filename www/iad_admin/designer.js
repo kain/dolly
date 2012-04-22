@@ -39,5 +39,8 @@ Ext.application({
         var cmp3 = Ext.create('IAD.view.AddImageWindow', {
             renderTo: Ext.getBody()
         });
+        var cmp4 = Ext.create('IAD.view.CreateImageWindow', {
+            renderTo: Ext.getBody()
+        });        
     }
 });

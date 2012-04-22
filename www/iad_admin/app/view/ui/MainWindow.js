@@ -71,7 +71,12 @@ Ext.define('IAD.view.ui.MainWindow', {
                                             xtype: 'gridcolumn',
                                             width: 200,
                                             dataIndex: 'name',
-                                            text: _('Image name')
+                                            flex: 1,
+                                            renderer : function(value, metadata) {
+                                                metadata.tdAttr = 'data-qtip="' + value + '"';
+                                                return value;
+                                            },
+                                            text: _('Image description')
                                         },
                                         {
                                             xtype: 'gridcolumn',
@@ -82,12 +87,17 @@ Ext.define('IAD.view.ui.MainWindow', {
                                         {
                                             xtype: 'datecolumn',
                                             dataIndex: 'addDate',
-                                            text: _('Add date')
+                                            width: 100,
+                                            flex: 0,
+                                            text: _('Add date'),
                                         },
                                         {
                                             xtype: 'actioncolumn',
                                             itemId: 'deleteRow',
                                             width: 25,
+                                            resizable: false,
+                                            width: 20,
+                                            flex: 0,
                                             sortable: false,
                                             items: [
                                                 {
