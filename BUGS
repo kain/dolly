@@ -1,3 +1,11 @@
-- image reappears in web interface if it was deleted after deploying to some computers
+DOLLY BUGS
+
+Main:
 - create iad.s3db database automatically
+
+Scripts:
+- if one of computer died/reboots while cloning, cloning of next partition will fail (udpcast will never start)
+
+Web-interface:
+- image reappears in image list if it was deleted after deploying to some computers
 

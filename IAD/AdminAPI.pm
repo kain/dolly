@@ -141,7 +141,7 @@ sub handleRequest {
 				};
 			}
 			when('addImageManual') {
-				my($imageId, $addDate) = $self->{'images'}->addImage($data->{'name'}, $data->{'path'});
+				my($imageId, $addDate) = $self->{'images'}->addImage($data->{'description'} || 'no description', $data->{'path'});
 				if(defined $imageId) {
 					$response->ok->add(
 						'imageId' => $imageId,
@@ -154,12 +154,34 @@ sub handleRequest {
 				$response->ok;
 			}
 			when('createImage') {
-				if($self->{'cloning'}->{'isCloning'}) {
+				my ($name, $desc, $path) = ($data->{'name'}, $data->{'description'} || 'no description');
+					$name =~ s/\ /_/g;
+
+				if($self->{'cloning'}->{'isCloning'}) 
+				{
 					$response->fail('Cloning already run');
 				}
-				else {
+				elsif (length($name) > 25) 
+				{
+					$response->fail('Name is too long, maximum 25 characters allowed');
+				}
+				elsif ($name =~ /\W/)
+				{
+					$response->fail('Only latin letters, numbers and _ allowed in name '.$name);
+				}
+				elsif (length($desc) > 200) 
+				{
+					$response->fail('Description is too long, maximum 200 characters allowed');
+				}
+				else 
+				{
+					my ($year, $month, $day, $hour, $min, $sec) = (localtime)[5,4,3,2,1,0];
+
+					$path = sprintf "%4d-%02d-%02d_%02d:%02d:%02d", $year+1900, $month+1, $day, $hour, $min, $sec;
+					$path = $path.'_' and $desc = ': '.$desc unless $name eq '';
+
 					$self->{'cloning'}->addComputer($self->{'classes'}->getComputerStruct($data->{'id'}));
-					$self->{'cloning'}->start('imaging', $data->{'name'}, $data->{'path'});
+					$self->{'cloning'}->start('imaging', $name.$desc, $path.$name);
 					$response->ok;
 				};
 			}
