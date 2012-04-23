@@ -84,7 +84,12 @@ sub start {
 		$self->{'ipToMac'} = {};
 		$self->{'cloningScriptState'}->{'finished'} = 0;
 		
-		my @computers = ();
+		my (@comp_name, @comp_id, $mode_str, $action_str);
+
+		foreach my $mac (keys %{$self->{'macs'}}){
+			push @comp_name, $self->{'macs'}->{$mac}->{name};
+			push @comp_id,	 $self->{'macs'}->{$mac}->{computerId};
+		}	
 
 		if($mode ne 'maintenance'){
 			my $image_path;
@@ -98,22 +103,20 @@ sub start {
 				$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
 				(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
 			};
-
-			$DEBUGGER->LOG( '#'x15, " Starting cloning process, mode:[$mode] ",
-					  			"image path:[$image_path]");
-
-			foreach my $mac (keys %{$self->{'macs'}}){
-				push @computers, $self->{'macs'}->{$mac}->{name};
-			}
-			$DEBUGGER->LOG( "Computers to clone:\n",' 'x20,
-							 join ', ', sort @computers);
+			$mode_str 	= "cloning process, mode:[$mode] image path:[$image_path]";
+			$action_str = "clone";
 		}
 		else{
-			foreach my $mac (keys %{$self->{'macs'}}){
-				push @computers, $self->{'macs'}->{$mac}->{computerId};
-			}
-			$self->startWolScript(@computers);
+			$mode_str	= "maintenance";
+			$action_str = "maintain";
+
+			$self->startWolScript(@comp_id);
 		}
+
+		$DEBUGGER->LOG( '#'x15, " Starting $mode_str");
+		$DEBUGGER->LOG( "Computers to $action_str:\n",' 'x20,
+							 join ', ', sort @comp_name);
+
 		$self->{'cloningScriptLog'} = [];
 
 		$self->{'state'}->set('waitAllReady') and return unless $mode eq 'maintenance';
