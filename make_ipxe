@@ -3,8 +3,9 @@
 
 set -e
 
+git submodule init
+git submodule update
 cd ipxe/src
-git pull
 make bin/undionly.kpxe EMBED=../../scripts/dollyscript.ipxe
 make bin/undionly.kkpxe EMBED=../../scripts/dollyscript.ipxe
 sudo cp bin/undionly.kpxe /var/lib/tftpboot/dolly_undionly.kpxe

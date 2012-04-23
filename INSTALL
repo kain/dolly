@@ -6,8 +6,13 @@ Main part:
 - become root (sudo -i)
 - add system user "cloned" (useradd --create-home --system --shell /bin/bash cloned)
 - generate ssh-keys for user "cloned" (su -c "ssh-keygen -t rsa" cloned) with empty passphrase
-- hostname of Dolly server must be resolvable in local network by clients
 - copy iad.s3db_sample to iad.s3db
+- hostname of Dolly server must be resolvable in local network by clients
+- write server hostname (for ex. "dolly.example.com") to files:
+  - live/config/chroot_local-includes/etc/rc.local
+  - scripts/dollyscript.ipxe
+  - nginx/dolly
+  - scripts/networkboot.ipxe
 
 Web part:
 - install packages (apt-get update && apt-get install ...):
