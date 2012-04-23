@@ -151,6 +151,9 @@ sub end {
 			$DEBUGGER->LOG( "State log:\n\t", join "\n\t", @state_log );
 		}
 	}
+	else {
+		$DEBUGGER->LOG( "Maintenance mode finished." );
+	}
 };
 
 #Список всех состояний процесса клонирования
