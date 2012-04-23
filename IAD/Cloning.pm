@@ -86,6 +86,9 @@ sub start {
 		
 		my (@comp_name, @comp_id, $mode_str, $action_str);
 
+		$mode_str	= "maintenance";
+		$action_str = "maintain";
+
 		foreach my $mac (keys %{$self->{'macs'}}){
 			push @comp_name, $self->{'macs'}->{$mac}->{name};
 			push @comp_id,	 $self->{'macs'}->{$mac}->{computerId};
@@ -103,24 +106,22 @@ sub start {
 				$self->{'imagingMac'} = (keys %{ $self->{'macs'} })[0];
 				(undef, $image_path) = ($self->{'imageName'}, $self->{'imagePath'}) = @params;
 			};
+			
 			$mode_str 	= "cloning process, mode:[$mode] image path:[$image_path]";
 			$action_str = "clone";
-		}
-		else{
-			$mode_str	= "maintenance";
-			$action_str = "maintain";
 
-			$self->startWolScript(@comp_id);
+			$self->{'state'}->set('waitAllReady')
+		}
+		else {
+			$self->{'state'}->set('waitAllReadyMaint');
 		}
 
 		$DEBUGGER->LOG( '#'x15, " Starting $mode_str");
 		$DEBUGGER->LOG( "Computers to $action_str:\n",' 'x20,
 							 join ', ', sort @comp_name);
 
-		$self->{'cloningScriptLog'} = [];
-
-		$self->{'state'}->set('waitAllReady') and return unless $mode eq 'maintenance';
-		$self->{'state'}->set('waitAllReadyMaint');
+		$self->{'cloningScriptLog'} = [];	
+		$self->startWolScript(@comp_id);
 	};
 };
 
