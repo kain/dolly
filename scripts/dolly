@@ -7,10 +7,8 @@ set -e
 
 # Print usage information
 usage() {
-  echo 'Usage:
-        dolly -h|--help
-        dolly -m|--mode save -t|--list "192.168.0.1" -n|--name "name" "comment"
-        dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." -n|--name "name"'
+  echo 'Usage:	dolly -m|--mode save -t|--list "192.168.0.1" "dirname"
+        dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." "dirname"'
 }
 
 E_SHELL=64
@@ -36,11 +34,17 @@ then
   exit $E_OPTERR
 fi
 
+# TODO
+# Check how many arguments provided from daemon
+#if [ "$#" -qt 5 ]
+#then
+#  usage
+#  exit $E_OPTERR
+#fi
+
 # For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
 ARGS=`getopt --name 'dolly' --options hm:t: --longoptions help,mode:,list: -- "$@"`
-
 eval set -- "$ARGS"
-
 while true
 do
   case "$1" in
@@ -66,17 +70,9 @@ else
 fi
 shopt -u nocasematch
 
-if [ "$MODE" == "save" ]
+############################### RESTORING #####################################
+if [ "$MODE" == "restore" ]
 then
-  exit 1
-fi
-
-# TODO how many arguments provided from perl daemon?
-#if [ "$#" -ne 1 ]
-#then
-#  usage
-#  exit $E_OPTERR
-#fi
 
 # Check if path provided and exist
 IMAGEPATH="/home/cloned/$1"
@@ -86,14 +82,13 @@ then
   exit $E_PATHERR
 fi
 
-# TODO check if current user can change directory to $IMAGEPATH
-# TODO check if image files are readable
-# TODO check for duplicates in lists of hosts
+# TODO
+# Check if current user can change directory to $IMAGEPATH
+# Check if image files are readable
+# Check for duplicates in lists of hosts
 
 # Number of hosts to clone
 NUM_LIST=`echo $LIST | wc -w`
-
-# TODO check if mode is save then number of hosts must be equal to 1
 
 # TODO fix subnet detection (use CIDR logic - sipcalc?)
 SUBNET=`echo ${LIST} | awk 'BEGIN { FS = "." } ; { print $1 "." $2 "." $3 "." }'`
@@ -159,5 +154,65 @@ do
 done
 
 echo "Cloning finished at: `date`"
+fi
+
+
+################################## SAVING #####################################
+if [ "$MODE" == "save" ]
+then
+
+# Creating directory for new image
+IMAGEPATH="/home/cloned/$1"
+mkdir "${IMAGEPATH}" || exit $E_PATHERR
+cd "${IMAGEPATH}"
+
+# Check if single address provided
+HOSTCOUNT=`echo $LIST | wc -w`
+if [ "${HOSTCOUNT}" -ne "1" ]
+then
+  echo "Error: multiple targets not allowed in save mode"
+  exit $E_LIST
+fi
+
+CLONE=$LIST
+
+# TODO fix subnet detection (use CIDR logic - sipcalc?)
+SUBNET=`echo ${LIST} | awk 'BEGIN { FS = "." } ; { print $1 "." $2 "." $3 "." }'`
+
+# Look for needed interface for target subnet
+IFACE=`ip -4 -oneline addr show | grep -F "${SUBNET}" | awk '{ print $2 }'`
+if [ -z "$IFACE" ]
+then
+  echo "Error: interface not found for target subnet"
+  exit $E_IFACE
+fi
+
+echo "Imaging started at: `date`"
+
+# Dumping partition table
+ssh root@${CLONE} "sfdisk -d /dev/sda" > sda-pt.sf
+
+# Dumping MBR boot code
+ssh root@${CLONE} "dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
+
+# Copy Dolly script to target
+scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
+
+# TODO: if image have more than one net interface?
+for PART in `ssh root@${CLONE} "ls /dev/sda?*" | awk 'BEGIN { FS = "/" } ; { print $3 }'`
+do
+  echo "Saving partition ${PART}"
+  # Run sender and put process in background
+  ssh root@${CLONE} /usr/bin/screen -d -m /sbin/dolly-sender /dev/${PART}
+  # Wait for udpcast to settle
+  sleep 5
+  # Use udpcast to receive data
+  /usr/bin/udp-receiver --interface ${IFACE} --nokbd --stat-period 1 > "${IMAGEPATH}/${PART}.img.gz"
+done
+
+ssh root@${CLONE} poweroff
+
+echo "Imaging finished at: `date`"
+fi
 
 exit 0
