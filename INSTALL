@@ -1,18 +1,20 @@
 DOLLY installation:
 
 Main part:
-- install Debian 6 (Squeeze) on virtual machine (Virtualbox, etc.) or physical server
-- add regular user at install time
-- become root (sudo -i)
-- add system user "cloned" (useradd --create-home --system --shell /bin/bash cloned)
-- generate ssh-keys for user "cloned" (su -c "ssh-keygen -t rsa" cloned) with empty passphrase
-- copy iad.s3db_sample to iad.s3db
-- hostname of Dolly server must be resolvable in local network by clients
-- write server hostname (for ex. "dolly.example.com") to files:
+- there should be working DHCP and DNS servers in the local network
+- install Debian stable (Squeeze) on virtual machine (Virtualbox, etc.) or physical server
+- assign static IP address to Dolly server
+- add Dolly to your DNS. Hostname "dolly" should be resolvable to IP address assigned to Dolly server (check it with command `host dolly` from client computer)
+- If you have not DNS server, or have troubles with adding records to it, then change "dolly" to the configured IP address in next files:
   - live/config/chroot_local-includes/etc/rc.local
   - scripts/dollyscript.ipxe
-  - nginx/dolly
   - scripts/networkboot.ipxe
+- download tarball: `wget "https://github.com/kain/dolly/tarball/master" -O dolly.tar.gz`	FIXME
+- configure git for github repository (https://github.com/kain/dolly)				FIXME
+- add system user "cloned" (run make_cloned)
+- run shell as user cloned: `sudo su - cloned`
+- copy iad.s3db_sample to iad.s3db
+
 
 Web part:
 - install packages (apt-get update && apt-get install ...):
@@ -60,7 +62,6 @@ Main Dolly part:
   udpcast
   wakeonlan
 - login to cloned user shell (su - cloned)
-- configure git for github repository (https://github.com/kain/dolly)
 - get Dolly sources
 - make links to Dolly scripts in /usr/local/bin
 - start perl daemon (cd dolly && perl ./iad_daemon.pl)
@@ -72,29 +73,12 @@ Debian Live part:
   live-build
   live-config
   live-manual-txt
-- debian live (configs, scripts, hacks)
-- server side settings (user, ssh-keys, daemons)
-- permissions
-- ipxe (sources with custom menu)
-- dnsmasq configs
-- DHCP server (stand alone or combined with cloning server)
-fix DNS resovling in initrd:
-  sudo mkdir -p /home/kasatkin/cloned/live/config/chroot_local-includes/etc/live/
-  echo "LIVE_DNS=true" | sudo tee /home/kasatkin/cloned/live/config/chroot_local-includes/etc/live/boot.conf
-
-disable creating "live user" in lb2 scripts
-put pub key to /root/.ssh/authorized_keys
-root without password
-put predefined SSH host keys to /etc/ssh
-
-disable key deletion in lb2 "hack scripts":
-diff /usr/share/live/build/scripts/build/lb_chroot_hacks lb_chroot_hacks.bak 
-132c132
-< #rm -f chroot/etc/ssh/ssh_host_*_key chroot/etc/ssh/ssh_host_*_key.pub
----
-> rm -f chroot/etc/ssh/ssh_host_*_key chroot/etc/ssh/ssh_host_*_key.pub
-
-
-...
-FIXME
+- set proxy if needed:
+  live/config/common
+  live/config/chroot_local-includes/etc/environment
+- configure timezone:
+  live/config/chroot_local-includes/etc/live/config.conf
+- configure dnsmasq (ProxyDHCP or DHCP server, subnets)
+- run make_live
+- run make_ipxe
 

@@ -11,6 +11,8 @@ Scripts:
 - create Makefile
 - replace gzip with xz
 - move main scripts to /usr/local/bin
+- send status info at intervals to update status on web interface
+- redraw message on main console at intervals on cloned computer
 
 Web-interface:
 + add support for WakeOnLan via wakeonlan (for ex.: wakeonlan -i 192.168.110.255 14:da:e9:47:15:ca)
@@ -20,4 +22,19 @@ Web-interface:
 - logrotate logs
 - fix typos
 - fix language errors
+- AAA
+- first run wizard (also setup DHCP|ProxyDHCP)
+- delete "Path" columnt in "Images" tab
+- set long timeout for tooltip with full description in "Images" tab
+
+Package:
+- compile ipxe (or use ipxe package if undionly.kkpxe provided?)
+- add rule to recompile debian live after system upgrade? (post-upgrade hook)
+- install dependencies (dnsmasq, udpcast, live-boot, live-build, live-config, ipxe*, nginx, fcgiwrap, php5-cgi, openssh-server, wakeonlan,..)
+- run as daemon in background
+ 
+Languages:
+- localisation support
+- translate to international english
+- fix typos
 
