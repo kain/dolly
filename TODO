@@ -1,5 +1,11 @@
 DOLLY TODO
 
+GRUB boot loader support:
++ copy hidden 62 sectors, used to store GRUB 1.5 stage files (http://www.pixelbeat.org/docs/disk/):
+dd bs=512 count=62 skip=1 if=/dev/sda of=./sda_hidden_data_sectors_1-62.bin
++ restore those hidden sectors at cloning time:
+cat sda_hidden_data_sectors_1-62.bin | ssh root@pf13 dd bs=512 count=62 seek=1 of=/dev/sda
+
 Main:
 - use partclone to copy all Clonezilla functionality (clone Vista, Win7, Linux, GPT, resize FS, etc...)
 - disable display power saving (via DPMS) or set timeout to XX hours
@@ -17,6 +23,7 @@ Scripts:
 Web-interface:
 + add support for WakeOnLan via wakeonlan (for ex.: wakeonlan -i 192.168.110.255 14:da:e9:47:15:ca)
 + write essential cloning logs to /var/log
+- always log disconnected clients
 - do not show "path to image" in web interface, add "name" and "description" fields
 - add ability to delete images from hard disk
 - logrotate logs
