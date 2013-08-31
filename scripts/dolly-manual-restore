@@ -1,0 +1,93 @@
+#!/bin/bash
+#
+#
+
+set -e
+
+# Print usage information
+usage() {
+  echo 'Usage:
+        dolly -h|--help
+        dolly -o|--output /dev/sda "/path/to/image/"'
+}
+
+E_SHELL=64
+E_OPTERR=65
+E_PATHERR=66
+E_DEVICE=67
+E_GETOPT=68
+
+# Check current shell
+if [ "${SHELL}" != "/bin/bash"  ]
+then
+  echo "Error: only /bin/bash shell supported."
+  echo
+  exit $E_SHELL
+fi
+
+# Check if any parameters provided
+if [ "$#" -eq 0 ]
+then
+  usage
+  exit $E_OPTERR
+fi
+
+# For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
+ARGS=`getopt --name 'dolly-manual-restore' --options ho: --longoptions help,output: -- "$@"`
+
+eval set -- "$ARGS"
+
+while true
+do
+  case "$1" in
+    -h|--help)		usage;			exit 0;;
+    -o|--output)	OUTPUT=$2;		shift 2;;
+    --)			shift;			break;;
+    *)			echo "Getopt error!";	exit $E_GETOPT;;
+  esac
+done
+
+# Check if path provided and exist
+if [ "$#" -ne 1 ]
+then
+  usage
+  exit $E_OPTERR
+fi
+if [ -d "$1" ]
+then
+  IMAGEPATH="$1"
+else
+  echo "Error: image path not exist."
+  exit $E_PATHERR
+fi
+
+# Check if output device is block device
+if [ -b "$OUTPUT" ]
+then
+  DEVICE=$OUTPUT
+else
+  echo "Error: target device is not block device or not exist."
+  exit $E_DEVICE
+fi
+
+echo "Cloning started at: `date`"
+
+cat ${IMAGEPATH}/sda-pt.sf | sfdisk -uS --Linux --quiet $DEVICE
+
+# Cloning partitions
+cd ${IMAGEPATH}
+for PARTNUMBER in `ls sda*.img.gz | awk 'BEGIN { FS = "." } ; { print $1 }' | sed 's/sda//'`
+do
+  cat sda${PARTNUMBER}.img.gz | gzip --decompress --to-stdout | ntfsclone --restore-image --overwrite ${DEVICE}${PARTNUMBER} -
+done
+
+# Cloning MBR and hidden data
+# Copy MBR boot record
+dd if=${IMAGEPATH}/sda-mbr.bin of=${DEVICE}
+# Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
+# TODO automatically get hidden sectors location from partition table
+dd if=${IMAGEPATH}/sda-hiddensectors.bin bs=512 count=62 seek=1 of=${DEVICE}
+
+echo "Cloning finished at: `date`"
+
+exit 0
