@@ -1,0 +1,12 @@
+#!ipxe
+#
+chain http://dolly/memtest.0 passes=3 && goto memory_good || goto memory_bad
+
+:memory_good
+#imgfetch http://192.168.0.1/report_failure.php?mac=${mac}&uuid=${uuid}
+exit
+
+:memory_bad
+imgfetch http://dolly/iad_api/getbootscript?mac=${net0/mac}&ip=${net0/ip}&bad_memory
+poweroff
+exit

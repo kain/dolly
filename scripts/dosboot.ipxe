@@ -1,0 +1,14 @@
+#!ipxe
+#
+
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 sercons=com1 baudhard=1152
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 script=556_cmos.bat
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 script=151_cmos.bat
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 script=99_cmos.bat
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 script=reset_cmos.bat
+#kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1 script=320_cmos.bat
+kernel http://dolly/memdisk nopassany=1 stack=2048 raw=1
+initrd http://dolly/itmodos.img
+
+boot
+exit 0
