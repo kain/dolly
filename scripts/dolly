@@ -70,6 +70,7 @@ else
 fi
 shopt -u nocasematch
 
+
 ############################### RESTORING #####################################
 if [ "$MODE" == "restore" ]
 then
@@ -117,6 +118,7 @@ echo "Cloning started at: `date`"
 # Cloning partition table
 for CLONE in ${LIST}
 do
+  # Create parition table
   cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} sfdisk -uS --Linux --quiet /dev/sda
   # Copy Dolly script to target (also works as pause before PT reread)
   scp "/usr/local/bin/dolly-receiver" root@${CLONE}:/sbin/
@@ -142,14 +144,19 @@ do
   /usr/bin/udp-sender --file "${IMAGEPATH}/${PART}.img.gz" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1
   # Wait for data is received by slow targets
   # This fixes "gzip: stdin error unexpected end of file"
-  sleep 5
+  # Sometimes client disconnects after finishing 1st partition. Slow clients?
+  sleep 30
 done
 
-# Cloning MBR and reboot
+# Cloning MBR and hidden data
 for CLONE in ${LIST}
 do
+  # Copy MBR boot record
   cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "dd of=/dev/sda"
-  # TODO delete IP addresses from boot.php
+  # Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
+  # TODO automatically get hidden sectors location from partition table
+  cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} dd bs=512 count=62 seek=1 of=/dev/sda
+  # Reboot target computer
   ssh root@${CLONE} reboot
 done
 
@@ -194,6 +201,10 @@ ssh root@${CLONE} "sfdisk -d /dev/sda" > sda-pt.sf
 
 # Dumping MBR boot code
 ssh root@${CLONE} "dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
+
+# Dumping hidden sectors
+# TODO automatically get hidden sectors location from partition table
+ssh root@${CLONE} "dd if=/dev/sda bs=512 count=62 skip=1" > sda-hiddensectors.bin
 
 # Copy Dolly script to target
 scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
