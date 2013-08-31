@@ -115,13 +115,25 @@ fi
 
 echo "Cloning started at: `date`"
 
+# Copy Dolly script to target (also check if we can receive files over multicast)
+for CLONE in ${LIST}
+do
+  # Execute Dolly script
+  ssh root@${CLONE} "/usr/bin/screen -d -m /usr/bin/udp-receiver --nokbd --file /sbin/dolly-receiver"
+  sleep 1
+done
+# Wait for udpcast to settle
+sleep 5
+
+# Run sender with speed limit and frequent statistics output
+/usr/bin/udp-sender --file "/usr/local/bin/dolly-receiver" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1
+sleep 5
+
 # Cloning partition table
 for CLONE in ${LIST}
 do
   # Create parition table
-  cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} sfdisk -uS --Linux --quiet /dev/sda
-  # Copy Dolly script to target (also works as pause before PT reread)
-  scp "/usr/local/bin/dolly-receiver" root@${CLONE}:/sbin/
+  cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} "/sbin/sfdisk -uS --Linux --quiet /dev/sda"
   # TODO Use ssh root@${CLONE} /sbin/blockdev --rereadpt $DEV
   #  to reread partition table
 done
@@ -133,7 +145,7 @@ do
   for CLONE in ${LIST}
   do
     # Execute Dolly script
-    ssh root@${CLONE} /usr/bin/screen -d -m /sbin/dolly-receiver /dev/${PART}
+    ssh root@${CLONE} "/usr/bin/screen -d -m /bin/bash /sbin/dolly-receiver /dev/${PART}"
     sleep 1
     # TODO resize NTFS?
     #add "ntfsresize --force --no-progress-bar $1" to cloned-restore?
@@ -152,10 +164,10 @@ done
 for CLONE in ${LIST}
 do
   # Copy MBR boot record
-  cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "dd of=/dev/sda"
+  cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "/bin/dd of=/dev/sda"
   # Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
   # TODO automatically get hidden sectors location from partition table
-  cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} dd bs=512 count=62 seek=1 of=/dev/sda
+  cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} "/bin/dd bs=512 count=62 seek=1 of=/dev/sda"
   # Reboot target computer
   ssh root@${CLONE} reboot
 done
@@ -197,14 +209,14 @@ fi
 echo "Imaging started at: `date`"
 
 # Dumping partition table
-ssh root@${CLONE} "sfdisk -d /dev/sda" > sda-pt.sf
+ssh root@${CLONE} "/sbin/sfdisk -d /dev/sda" > sda-pt.sf
 
 # Dumping MBR boot code
-ssh root@${CLONE} "dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
+ssh root@${CLONE} "/bin/dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
 
 # Dumping hidden sectors
 # TODO automatically get hidden sectors location from partition table
-ssh root@${CLONE} "dd if=/dev/sda bs=512 count=62 skip=1" > sda-hiddensectors.bin
+ssh root@${CLONE} "/bin/dd if=/dev/sda bs=512 count=62 skip=1" > sda-hiddensectors.bin
 
 # Copy Dolly script to target
 scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
@@ -214,11 +226,11 @@ for PART in `ssh root@${CLONE} "ls /dev/sda?*" | awk 'BEGIN { FS = "/" } ; { pri
 do
   echo "Saving partition ${PART}"
   # Run sender and put process in background
-  ssh root@${CLONE} /usr/bin/screen -d -m /sbin/dolly-sender /dev/${PART}
+  ssh root@${CLONE} "/usr/bin/screen -d -m /sbin/dolly-sender /dev/${PART}"
   # Wait for udpcast to settle
   sleep 5
   # Use udpcast to receive data
-  /usr/bin/udp-receiver --interface ${IFACE} --nokbd --stat-period 1 > "${IMAGEPATH}/${PART}.img.gz"
+  /usr/bin/udp-receiver --interface ${IFACE} --nokbd --stat-period 1 --file "${IMAGEPATH}/${PART}.img.gz"
 done
 
 ssh root@${CLONE} poweroff
