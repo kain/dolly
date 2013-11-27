@@ -168,13 +168,26 @@ do
   # Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
   # TODO automatically get hidden sectors location from partition table
   cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} "/bin/dd bs=512 count=62 seek=1 of=/dev/sda"
-  # Reboot target computer
+done
+
+# Run custom scripts on targets
+if [ -e "$IMAGEPATH/custom_script" ]
+then
+  for CLONE in ${LIST}
+  do
+    ${IMAGEPATH}/custom_script ${CLONE}
+  done
+fi
+
+# Reboot targets
+for CLONE in ${LIST}
+do
   ssh root@${CLONE} reboot
 done
 
 echo "Cloning finished at: `date`"
 fi
-
+############################### END OF RESTORING #####################################
 
 ################################## SAVING #####################################
 if [ "$MODE" == "save" ]
@@ -237,5 +250,6 @@ ssh root@${CLONE} poweroff
 
 echo "Imaging finished at: `date`"
 fi
+################################## ENF OF SAVING #####################################
 
 exit 0
