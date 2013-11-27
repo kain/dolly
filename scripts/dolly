@@ -119,14 +119,14 @@ echo "Cloning started at: `date`"
 for CLONE in ${LIST}
 do
   # Execute Dolly script
-  ssh root@${CLONE} "/usr/bin/screen -d -m /usr/bin/udp-receiver --nokbd --file /sbin/dolly-receiver"
+  ssh root@${CLONE} "/usr/bin/screen -d -m /usr/bin/udp-receiver --ttl=2 --nokbd --file /sbin/dolly-receiver"
   sleep 1
 done
 # Wait for udpcast to settle
 sleep 5
 
 # Run sender with speed limit and frequent statistics output
-/usr/bin/udp-sender --file "/usr/local/bin/dolly-receiver" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1 --broadcast
+/usr/bin/udp-sender --ttl=2 --file "/usr/local/bin/dolly-receiver" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1
 sleep 5
 
 # Cloning partition table
@@ -153,7 +153,7 @@ do
   # Wait for udpcast to settle
   sleep 5
   # Run sender with speed limit and frequent statistics output
-  /usr/bin/udp-sender --file "${IMAGEPATH}/${PART}.img.gz" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1 --broadcast
+  /usr/bin/udp-sender --ttl=2 --file "${IMAGEPATH}/${PART}.img.gz" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 1
   # Wait for data is received by slow targets
   # This fixes "gzip: stdin error unexpected end of file"
   # Sometimes client disconnects after finishing 1st partition. Slow clients?
@@ -230,7 +230,7 @@ do
   # Wait for udpcast to settle
   sleep 5
   # Use udpcast to receive data
-  /usr/bin/udp-receiver --interface ${IFACE} --nokbd --stat-period 1 --file "${IMAGEPATH}/${PART}.img.gz"
+  /usr/bin/udp-receiver --ttl=2 --interface ${IFACE} --nokbd --stat-period 1 --file "${IMAGEPATH}/${PART}.img.gz"
 done
 
 ssh root@${CLONE} poweroff
