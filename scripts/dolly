@@ -216,26 +216,29 @@ fi
 
 echo "Imaging started at: `date`"
 
+# Find a name of the first disk device
+SRCDEV=$(ssh root@${CLONE} lsblk -d -e 11,7 -i -n -o NAME | head -n 1)
+
 # Creating directory for new image
 IMAGEPATH="/home/cloned/$1"
 mkdir "${IMAGEPATH}" || exit $E_PATHERR
 cd "${IMAGEPATH}"
 
 # Dumping partition table
-ssh root@${CLONE} "/sbin/sfdisk -d /dev/sda" > sda-pt.sf
+ssh root@${CLONE} "/sbin/sfdisk -d /dev/${SRCDEV}" > sda-pt.sf
 
 # Dumping MBR boot code
-ssh root@${CLONE} "/bin/dd if=/dev/sda bs=448 count=1" > sda-mbr.bin
+ssh root@${CLONE} "/bin/dd if=/dev/${SRCDEV} bs=448 count=1" > sda-mbr.bin
 
 # Dumping hidden sectors
 # TODO automatically get hidden sectors location from partition table
-ssh root@${CLONE} "/bin/dd if=/dev/sda bs=512 count=62 skip=1" > sda-hiddensectors.bin
+ssh root@${CLONE} "/bin/dd if=/dev/${SRCDEV} bs=512 count=62 skip=1" > sda-hiddensectors.bin
 
 # Copy Dolly script to target
 scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
 
 # TODO: if image have more than one net interface?
-for PART in `ssh root@${CLONE} "ls /dev/sda?*" | awk 'BEGIN { FS = "/" } ; { print $3 }'`
+for PART in `ssh root@${CLONE} "ls /dev/${SRCDEV}?*" | awk 'BEGIN { FS = "/" } ; { print $3 }'`
 do
   echo "Saving partition ${PART}"
   # Run sender and put process in background
