@@ -193,11 +193,6 @@ fi
 if [ "$MODE" == "save" ]
 then
 
-# Creating directory for new image
-IMAGEPATH="/home/cloned/$1"
-mkdir "${IMAGEPATH}" || exit $E_PATHERR
-cd "${IMAGEPATH}"
-
 # Check if single address provided
 HOSTCOUNT=`echo $LIST | wc -w`
 if [ "${HOSTCOUNT}" -ne "1" ]
@@ -220,6 +215,11 @@ then
 fi
 
 echo "Imaging started at: `date`"
+
+# Creating directory for new image
+IMAGEPATH="/home/cloned/$1"
+mkdir "${IMAGEPATH}" || exit $E_PATHERR
+cd "${IMAGEPATH}"
 
 # Dumping partition table
 ssh root@${CLONE} "/sbin/sfdisk -d /dev/sda" > sda-pt.sf
