@@ -130,13 +130,15 @@ sleep 5
 sleep 5
 
 # Cloning partition table
-for CLONE in ${LIST}
-do
-  # Create parition table
-  cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} "/sbin/sfdisk -uS --Linux --quiet /dev/sda"
-  # TODO Use ssh root@${CLONE} /sbin/blockdev --rereadpt $DEV
-  #  to reread partition table
-done
+# TODO Use ssh root@${CLONE} /sbin/blockdev --rereadpt $DEV
+#  to reread partition table
+if [ -e "${IMAGEPATH}/sda-pt.sf" ]
+then
+  for CLONE in ${LIST}
+  do
+    cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} "/sbin/sfdisk -uS --Linux --quiet /dev/sda"
+  done
+fi
 
 # Cloning partitions
 cd ${IMAGEPATH}
@@ -160,15 +162,24 @@ do
   sleep 30
 done
 
-# Cloning MBR and hidden data
-for CLONE in ${LIST}
-do
-  # Copy MBR boot record
-  cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "/bin/dd of=/dev/sda"
-  # Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
-  # TODO automatically get hidden sectors location from partition table
-  cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} "/bin/dd bs=512 count=62 seek=1 of=/dev/sda"
-done
+# Copy MBR boot record
+if [ -e "${IMAGEPATH}/sda-mbr.bin" ]
+then
+  for CLONE in ${LIST}
+  do
+    cat ${IMAGEPATH}/sda-mbr.bin | ssh root@${CLONE} "/bin/dd of=/dev/sda"
+  done
+fi
+
+# Copy over hidden data between 1 and 63 sectors that containing GRUB stage 1.5
+# TODO automatically get hidden sectors location from partition table
+if [ -e "${IMAGEPATH}/sda-hiddensectors.bin" ]
+then
+  for CLONE in ${LIST}
+  do
+    cat ${IMAGEPATH}/sda-hiddensectors.bin | ssh root@${CLONE} "/bin/dd bs=512 count=62 seek=1 of=/dev/sda"
+  done
+fi
 
 # Run custom scripts on targets
 if [ -e "$IMAGEPATH/custom_script" ]
