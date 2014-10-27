@@ -1,0 +1,16 @@
+#!ipxe
+#
+
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo Network is OK!
+sleep 240
+reboot
+exit 0
