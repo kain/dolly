@@ -1,6 +1,7 @@
 #!ipxe
 #
-kernel http://dolly/vmlinuz boot=live config httpfs=http://dolly:81/filesystem.squashfs
+# Live Debian based on Wheezy
+kernel http://dolly/vmlinuz boot=live config nouser timezone=Europe/Moscow utc=no noprompt noeject fetch=http://dolly/root.squashfs
 initrd http://dolly/initrd.img
 boot
 exit 0
