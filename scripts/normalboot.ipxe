@@ -1,3 +1,13 @@
 #!ipxe
 #
+
+menu 
+item --key 1	itmo	(1) Boot default ITMO image
+item --key 2	jan	(2) Boot Jan Malakhovski image
+choose --default itmo --timeout 3000 target && goto ${target}
+
+:itmo
 exit 0
+
+:jan
+chain http://192.168.70.44/boot.ipxe
