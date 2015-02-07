@@ -1,3 +1,7 @@
 #!/bin/bash
 
-ntfsclone --save-image --output - $1 | gzip --stdout | /usr/bin/udp-sender --ttl=1 --full-duplex --min-receivers 1 --nokbd --max-bitrate 80m
+NTFSCLONE=`which ntfsclone`
+GZIP=`which gzip`
+UDPSENDER=`which udp-sender`
+
+${NTFSCLONE} --save-image --output - $1 | ${GZIP} --stdout | ${UDPSENDER} --ttl=1 --full-duplex --min-receivers 1 --nokbd --max-bitrate 80m
