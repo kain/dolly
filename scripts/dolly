@@ -180,6 +180,41 @@ then
   done
 fi
 
+# Deliver optional files to target partiton via multicast.
+# Files must resides in subdirectories named after partition (like sda1, sda2,..).
+# Only regular files supported, file would be placed into root directory of partition.
+cd ${IMAGEPATH}
+for PART in sda{1,2,3,4}
+do
+  if [ -d ${PART} ]
+  then
+    pushd ${PART}
+    for CLONE in ${LIST}
+    do
+      ssh root@${CLONE} mkdir -p /mnt/${PART}
+      ssh root@${CLONE} mount /dev/${PART} /mnt/${PART}
+      sleep 1
+    done
+    for FILE in `dir -d *`
+    do
+      for CLONE in ${LIST}
+      do
+        ssh root@${CLONE} "/usr/bin/screen -d -m /usr/bin/udp-receiver --ttl=1 --nokbd --file /mnt/${PART}/${FILE}"
+        sleep 1
+      done
+      sleep 5
+      /usr/bin/udp-sender --ttl=1 --file "${IMAGEPATH}/${PART}/${FILE}" --interface ${IFACE} --full-duplex --min-receivers ${NUM_LIST} --nokbd --max-bitrate 80m --stat-period 2000
+      sleep 30
+    done
+    for CLONE in ${LIST}
+    do
+      ssh root@${CLONE} umount /mnt/${PART}
+      sleep 1
+    done
+    popd
+  fi
+done
+
 # Run custom scripts on targets
 if [ -e "$IMAGEPATH/custom_script" ]
 then

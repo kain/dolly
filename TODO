@@ -12,6 +12,7 @@ Main:
 - use dhcp-probe package - network DHCP or BootP server discover
 - use os-prober package - utility to detect other OSes on a set of drives
 - use HDT project (http://hdt-project.org/wiki) - analyze hardware on first booted computer
+- add memtest to PXE boot menu
 
 Scripts:
 - create Makefile
