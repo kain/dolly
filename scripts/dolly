@@ -11,6 +11,8 @@ usage() {
         dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." "dirname"'
 }
 
+ARGS_MIN=5
+ARGS_MAX=5
 E_SHELL=64
 E_OPTERR=65
 E_PATHERR=66
@@ -27,20 +29,17 @@ then
   exit $E_SHELL
 fi
 
-# Check if any parameters provided
-if [ "$#" -eq 0 ]
+# Check how many arguments provided from daemon
+if [ $# -lt $ARGS_MIN ]
 then
   usage
   exit $E_OPTERR
 fi
-
-# TODO
-# Check how many arguments provided from daemon
-#if [ "$#" -qt 5 ]
-#then
-#  usage
-#  exit $E_OPTERR
-#fi
+if [ $# -gt $ARGS_MAX ]
+then
+  usage
+  exit $E_OPTERR
+fi
 
 # For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
 ARGS=`getopt --name 'dolly' --options hm:t: --longoptions help,mode:,list: -- "$@"`
