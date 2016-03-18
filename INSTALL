@@ -2,7 +2,7 @@ DOLLY installation:
 
 Main part:
 - there should be working DHCP and DNS servers in the local network
-- install Debian stable (Squeeze) on virtual machine (Virtualbox, etc.) or physical server
+- install Debian stable on server
 - assign static IP address to Dolly server
 - add Dolly to your DNS. Hostname "dolly" should be resolvable to IP address assigned to Dolly server (check it with command `host dolly` from client computer)
 - If you have not DNS server, or have troubles with adding records to it, then change "dolly" to the configured IP address in next files:
@@ -18,10 +18,10 @@ Main part:
 
 Web part:
 - install packages (apt-get update && apt-get install ...):
-  lighttpd
+  lighttpd		FIXME
   nginx
-  fcgiwrap
-  php5-cgi
+  fcgiwrap		FIXME
+  php5-cgi		FIXME
 - stop web servers:
   /etc/init.d/lighttpd stop
   /etc/init.d/nginx stop
@@ -35,16 +35,18 @@ Web part:
   /etc/init.d/nginx restart
 
 Perl part:
+- install dev utilities to compile neccessary Perl modules: apt-get install build-essential
 - enter 'cpan' shell under 'root'
 - in case of network proxy configure it with those commands:
   o conf init /proxy/
   o conf commit
-- install perl modules:
-  LWP::UserAgent		# For good proxy support in cpan
+- install perl modules (using cpan <module>):
+  YAML
+  common::sense
+  LWP::UserAgent
   AnyEvent
   AnyEvent::FCGI
   AnyEvent::Run
-  common::sense
   DBD::SQLite
   DBI
   File::Slurp
@@ -61,6 +63,7 @@ Main Dolly part:
   screen
   udpcast
   wakeonlan
+  mussh
 - login to cloned user shell (su - cloned)
 - get Dolly sources
 - make links to Dolly scripts in /usr/local/bin
