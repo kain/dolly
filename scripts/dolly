@@ -87,6 +87,7 @@ fi
 # Check if current user can change directory to $IMAGEPATH
 # Check if image files are readable
 # Check for duplicates in lists of hosts
+# Check if host list contains hostnames and convert them to IP addresses
 
 # Number of hosts to clone
 NUM_LIST=`echo $LIST | wc -w`
@@ -192,8 +193,8 @@ do
     pushd ${PART}
     for CLONE in ${LIST}
     do
-      ssh root@${CLONE} mkdir -p /mnt/${PART}
-      ssh root@${CLONE} mount /dev/${PART} /mnt/${PART}
+      ssh root@${CLONE} "mkdir -p /mnt/${PART}"
+      ssh root@${CLONE} "mount /dev/${PART} /mnt/${PART}"
       sleep 1
     done
     for FILE in `dir -d *`
