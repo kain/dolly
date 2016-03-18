@@ -227,13 +227,23 @@ do
   fi
 done
 
-# Run custom scripts on targets
-if [ -e "$IMAGEPATH/custom_script" ]
+# Run script on server side and use target hostname as argument
+if [ -e "$IMAGEPATH/custom_local_script" ]
 then
   for CLONE in ${LIST}
   do
-    ${IMAGEPATH}/custom_script ${CLONE}
+    ${IMAGEPATH}/custom_local_script ${CLONE}
   done
+fi
+
+# Run script remotely on every target simultaneously
+if [ -e "$IMAGEPATH/custom_remote_script" ]
+then
+  for CLONE in ${LIST}
+  do
+    scp "$IMAGEPATH/custom_remote_script" root@${CLONE}:/root/
+  done
+  mussh -m 0 -q -L root -h ${LIST} -C "$IMAGEPATH/custom_remote_script"
 fi
 
 # Reboot targets
