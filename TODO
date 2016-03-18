@@ -12,7 +12,7 @@ Main:
 - use dhcp-probe package - network DHCP or BootP server discover
 - use os-prober package - utility to detect other OSes on a set of drives
 - use HDT project (http://hdt-project.org/wiki) - analyze hardware on first booted computer
-- add memtest to PXE boot menu
+- set ethernet speed to 100 Mbit/s full duplex at early boot stage (initrd)
 
 Scripts:
 - create Makefile
@@ -40,6 +40,7 @@ Package:
 - add rule to recompile debian live after system upgrade? (post-upgrade hook)
 - install dependencies (dnsmasq, udpcast, live-boot, live-build, live-config, ipxe*, nginx, fcgiwrap, php5-cgi, openssh-server, wakeonlan,..)
 - run as daemon in background
+- use parallel compressing (pigz), decompressing can't be parallelised (man pigz)
  
 Languages:
 - localisation support
