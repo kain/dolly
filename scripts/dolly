@@ -116,6 +116,16 @@ fi
 
 echo "Cloning started at: `date`"
 
+# Set ethernet card speed and duplex
+# Reset Wake on Magic packet flag
+for CLONE in ${LIST}
+do
+  ssh root@${CLONE} "ethtool -s eth0 wol d"
+  ssh root@${CLONE} "ethtool -s eth0 speed 100 duplex full"
+  ssh root@${CLONE} "ethtool -s eth0 wol g"
+  sleep 1
+done
+
 # Copy Dolly script to target (also check if we can receive files over multicast)
 for CLONE in ${LIST}
 do
