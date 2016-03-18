@@ -11,6 +11,6 @@ echo
 echo
 echo
 echo Network is OK!
-sleep 240
+sleep 600
 reboot
 exit 0
