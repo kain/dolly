@@ -304,15 +304,18 @@ ssh root@${CLONE} "/bin/dd if=/dev/${SRCDEV} bs=512 count=62 skip=1" > sda-hidde
 scp -q "/usr/local/bin/dolly-sender" root@${CLONE}:/sbin/
 
 # TODO: if image have more than one net interface?
+NUM=0
 for PART in `ssh root@${CLONE} "ls /dev/${SRCDEV}?*" | awk 'BEGIN { FS = "/" } ; { print $3 }'`
 do
+  NUM=$((NUM+1))
   echo "Saving partition ${PART}"
   # Run sender and put process in background
   ssh root@${CLONE} "/usr/bin/screen -d -m /sbin/dolly-sender /dev/${PART}"
   # Wait for udpcast to settle
   sleep 5
   # Use udpcast to receive data
-  /usr/bin/udp-receiver --ttl=1 --interface ${IFACE} --nokbd --stat-period 2000 --file "${IMAGEPATH}/${PART}.img.gz"
+  # Save to sda1.img.gz, sda2.img.gz and so on
+  /usr/bin/udp-receiver --ttl=1 --interface ${IFACE} --nokbd --stat-period 2000 --file "${IMAGEPATH}/sda${NUM}.img.gz"
 done
 
 ssh root@${CLONE} poweroff
