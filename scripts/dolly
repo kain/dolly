@@ -238,10 +238,6 @@ fi
 # Run script remotely on every target simultaneously
 if [ -e "$IMAGEPATH/custom_remote_script" ]
 then
-  for CLONE in ${LIST}
-  do
-    scp "$IMAGEPATH/custom_remote_script" root@${CLONE}:/root/
-  done
   mussh -m 0 -q -L root -h ${LIST} -C "$IMAGEPATH/custom_remote_script"
 fi
 
