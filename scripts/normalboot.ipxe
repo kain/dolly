@@ -3,37 +3,21 @@
 
 menu 
 item --key 1	itmo	(1) Boot default ITMO image
-item --key 2	jan	(2) Boot Jan Malakhovski image
-item --key 3	memtest	(3) Boot memtest
-
+item --key 2	memtest	(2) Boot memtest
 choose --default itmo --timeout 3000 target && goto ${target}
 
 :itmo
 exit 0
-
-:jan
-chain http://192.168.70.44/boot.ipxe
 
 :memtest
 set protocol http
 set server_name dolly.ctd.loc
 set memtest_iso memtest.iso
 
+
+
+
 kernel ${protocol}://${server_name}/memdisk || read void
 initrd ${protocol}://${server_name}/${memtest_iso} || read void
 imgargs memdisk iso raw || read void
 boot || read void
-
-
-
-#:memtest
-#chain http://dolly/memtest.0 passes=10 && goto memory_good || goto memory_bad
-#
-#:memory_good
-##imgfetch http://192.168.0.1/report_failure.php?mac=${mac}&uuid=${uuid}
-#poweroff
-#
-#:memory_bad
-##imgfetch http://dolly/iad_api/getbootscript?mac=${net0/mac}&ip=${net0/ip}&bad_memory
-##poweroff
-#goto memtest
