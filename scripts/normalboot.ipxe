@@ -2,9 +2,12 @@
 #
 
 menu 
-item --key 1	itmo	(1) Boot default ITMO image
-item --key 2	memtest	(2) Boot memtest
+item --key 1	itmo		(1) Boot default ITMO image
+item --key 2	memtest		(2) Boot memtest
+item --key 3	maint		(3) Boot into maintenance mode
+
 choose --default itmo --timeout 3000 target && goto ${target}
+
 
 :itmo
 exit 0
@@ -12,12 +15,13 @@ exit 0
 :memtest
 set protocol http
 set server_name dolly.ctd.loc
-set memtest_iso memtest.iso
-
-
-
-
+set boot_iso memtest.iso
 kernel ${protocol}://${server_name}/memdisk || read void
-initrd ${protocol}://${server_name}/${memtest_iso} || read void
+initrd ${protocol}://${server_name}/${boot_iso} || read void
 imgargs memdisk iso raw || read void
 boot || read void
+
+:maint
+kernel http://dolly/vmlinuz boot=live config nouser timezone=Europe/Moscow utc=no noprompt noeject fetch=http://dolly/root.squashfs
+initrd http://dolly/initrd.img
+boot
