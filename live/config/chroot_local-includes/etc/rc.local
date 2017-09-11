@@ -22,7 +22,7 @@ echo "
 
 
 
-
+$(hostname -A)
 
 
 
