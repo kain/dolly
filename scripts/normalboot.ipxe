@@ -2,9 +2,9 @@
 #
 
 menu 
-item --key 1	itmo		(1) Boot default ITMO image
-item --key 2	memtest		(2) Boot memtest
-item --key 3	maint		(3) Boot into maintenance mode
+item --key 1	itmo		(1) Boot from local disk
+item --key 2	memtest		(2) Memory test
+item --key 3	maint		(3) Maintenance mode
 
 choose --default itmo --timeout 3000 target && goto ${target}
 
