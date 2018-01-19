@@ -146,7 +146,7 @@ if [ -e "${IMAGEPATH}/sda-pt.sf" ]
 then
   for CLONE in ${LIST}
   do
-    cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} "/sbin/sfdisk -uS --Linux --quiet /dev/sda"
+    cat ${IMAGEPATH}/sda-pt.sf | ssh root@${CLONE} "/sbin/sfdisk -uS --Linux --force --quiet /dev/sda"
   done
 fi
 
