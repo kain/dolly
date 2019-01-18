@@ -7,12 +7,14 @@ set -e
 
 # Print usage information
 usage() {
-  echo 'Usage:	dolly -m|--mode save -t|--list "192.168.0.1" "dirname"
-        dolly -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." "dirname"'
+  echo 'Usage:
+        dolly -r|--ending reboot|poweroff|exit -m|--mode save    -t|--list "192.168.0.1"                "dirname"
+        dolly -r|--ending reboot|poweroff|exit -m|--mode restore -t|--list "192.168.0.1 192.168.0.2..." "dirname"'
 }
 
 ARGS_MIN=5
-ARGS_MAX=5
+ARGS_MAX=7
+ENDING=reboot
 E_SHELL=64
 E_OPTERR=65
 E_PATHERR=66
@@ -42,12 +44,13 @@ then
 fi
 
 # For details see: /usr/share/doc/util-linux/examples/getopt-parse.bash
-ARGS=`getopt --name 'dolly' --options hm:t: --longoptions help,mode:,list: -- "$@"`
+ARGS=`getopt --name 'dolly' --options hr:m:t: --longoptions help,ending:,mode:,list: -- "$@"`
 eval set -- "$ARGS"
 while true
 do
   case "$1" in
     -h|--help)		usage;			exit 0;;
+    -r|--ending)	ENDING=$2;		shift 2;;
     -m|--mode)		MODE=$2;		shift 2;;
     -t|--list)		LIST=$2;		shift 2;;
     --)			shift;			break;;
@@ -241,10 +244,10 @@ then
   mussh -m 0 -q -L root -h ${LIST} -C "$IMAGEPATH/custom_remote_script"
 fi
 
-# Reboot targets
+# Reboot or shutdown targets
 for CLONE in ${LIST}
 do
-  ssh root@${CLONE} reboot
+  ssh root@${CLONE} ${ENDING}
 done
 
 echo "Cloning finished at: `date`"
@@ -314,7 +317,8 @@ do
   /usr/bin/udp-receiver --ttl=1 --interface ${IFACE} --nokbd --stat-period 2000 --file "${IMAGEPATH}/sda${NUM}.img.gz"
 done
 
-ssh root@${CLONE} poweroff
+# Reboot or shutdown source
+ssh root@${CLONE} ${ENDING}
 
 echo "Imaging finished at: `date`"
 fi
